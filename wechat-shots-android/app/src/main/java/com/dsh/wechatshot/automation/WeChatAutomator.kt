@@ -183,6 +183,13 @@ class WeChatAutomator(
             throw AutomationException("微信没有正常启动，请确认微信可以打开并已登录", "启动")
         }
 
+        // 真机冷启动微信很慢（10s+），只判断“微信在前台”会把开屏动画或切换过程
+        // 当成微信主界面，进而在错误屏幕上点搜索框（甚至点回我们自己的 App）。
+        // 这里等主界面真正就绪：底部「微信/通讯录/发现/我」至少出现 3 个。
+        if (!waitForWeChatMainReady()) {
+            throw AutomationException("微信没有正常启动或未登录，请先手动打开微信并登录后再试", "启动")
+        }
+
         // 不再先 OCR 微信主界面的聊天列表：在真机上这一步会拖慢一分钟以上，
         // 而且“文件传输助手”这类功能入口的卡片标题不可点。直接走搜索最稳。
         log("打开微信搜索…")
@@ -447,6 +454,49 @@ class WeChatAutomator(
         page = waitForSearchPage()
         return page
     }
+
+    private suspend fun waitForWeChatMainReady(): Boolean {
+        var relaunched = 0
+        var backs = 0
+        repeat(16) { attempt ->
+            val pkg = adb.topPackage()
+            if (pkg != WECHAT_PACKAGE) {
+                // 微信被系统切到后台（或冷启动还在切换），必要时重新拉起。
+                if (attempt > 0 && relaunched < 2) {
+                    relaunched++
+                    adb.launchWeChat()
+                    delay(1_500)
+                    return@repeat
+                }
+                delay(700)
+                return@repeat
+            }
+            val screen = recognizeScreen()
+            val texts = screen.lines.map { it.text.trim() }
+            if (isLoginScreenTexts(texts)) {
+                throw AutomationException("微信未登录，请先登录微信后再导出", "启动")
+            }
+            val tabCount = listOf("微信", "通讯录", "发现", "我").count { tab -> texts.any { it == tab } }
+            if (tabCount >= 3) {
+                delay(500)
+                return true
+            }
+            // 微信会恢复上次停留的页面（聊天气泡页/搜索页/朋友圈等），
+            // 这里按返回键退回主界面（有底部四个标签页），否则后续点不到搜索入口。
+            if (backs < 6) {
+                backs++
+                runCatching { adb.shell("input keyevent 4", 3_000) }
+                delay(800)
+                return@repeat
+            }
+            delay(900)
+        }
+        return false
+    }
+
+    private fun isLoginScreenTexts(texts: List<String>): Boolean =
+        texts.any { it == "进入微信" || it == "登录" } &&
+            texts.any { it.contains("手机号") || it.contains("用其他方式登录") }
 
     private suspend fun waitForWeChat(): UiDocument? {
         repeat(7) { index ->

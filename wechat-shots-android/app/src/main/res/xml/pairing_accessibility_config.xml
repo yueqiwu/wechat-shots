@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  无障碍配对助手：只读取系统设置（无线调试/配对弹窗）的窗口文本，用于自动识别配对码，
+  不读取其它应用的窗口内容（packageNames 已限定为设置类应用）。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewTextChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows|flagReportViewIds"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/pairing_accessibility_description"
+    android:notificationTimeout="80"
+    android:packageNames="com.android.settings,com.coloros.settings,com.oplus.settings" />

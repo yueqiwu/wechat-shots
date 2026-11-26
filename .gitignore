@@ -39,3 +39,9 @@ wechat-shots-android/test-artifacts/
 __pycache__/
 *.pyc
 
+
+# 真机调试临时产物（含聊天内容截图，勿提交）
+real-out*/
+real-*.png
+real-*.xml
+.tmp_*

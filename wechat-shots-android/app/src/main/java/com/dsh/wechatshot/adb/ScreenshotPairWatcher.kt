@@ -45,6 +45,11 @@ class ScreenshotPairWatcher(
     private val onScreenshot: (Bitmap, Source) -> Unit,
     private val onStatus: (String) -> Unit = {},
     private val onPermissionMissing: () -> Unit = {},
+    /**
+     * 页面模式：允许把开始监听前 3 分钟内的截图也当作目标（用户常常先截图再打开 App）。
+     * 前台服务模式：只需要几十秒内的新截图，传小值可避免把上一次的旧配对码当成新目标。
+     */
+    private val initialLookbackSec: Long = 180L,
 ) {
 
     enum class Source { MEDIA_STORE, POLL, SCREEN_CAPTURE_CALLBACK }
@@ -76,7 +81,7 @@ class ScreenshotPairWatcher(
         }
         this.activity = activity
         // 进入页面时，允许把最近 3 分钟内截的图也当成待识别目标（用户往往先截图再打开 App）
-        startWallClockSec = System.currentTimeMillis() / 1000L - 180L
+        startWallClockSec = System.currentTimeMillis() / 1000L - initialLookbackSec.coerceAtLeast(0L)
         val ht = HandlerThread("ScreenshotPairWatcher").also { it.start() }
         thread = ht
         val handler = Handler(ht.looper)

@@ -5,7 +5,7 @@
 > 只导出**屏幕上看得到的聊天页面截图**，不是导出微信数据库或文字记录；不需要 root，不需要电脑常驻。
 
 - 包名：`com.dsh.wechatshot`
-- 版本：1.0.1（versionCode 2）
+- 版本：1.1.2（versionCode 5）
 - 最低系统：Android 11（API 30）
 - 目标系统：Android 17（API 37）
 - 界面语言：简体中文
@@ -236,8 +236,8 @@ dist/                          最终 APK
 
 ```bash
 python ../tools/release_bt.py \
-  --apk dist/wechat-shots-1.1.1-release.apk \
-  --version 1.1.1 --code 4 \
+  --apk dist/wechat-shots-1.1.2-release.apk \
+  --version 1.1.2 --code 5 \
   --notes "更新说明第一行
 第二行"
 ```
@@ -249,6 +249,10 @@ python ../tools/release_bt.py \
 
 ## 版本记录
 
+- `1.1.2`（versionCode 5）：真机无线配对重做——新增「自动配对助手」无障碍服务，系统「与设备配对」弹窗出现时自动读取
+  配对码/配对端口并立刻连接（ColorOS 等会冻结后台定时器的机型上，截图方案不可用）；内置 Conscrypt 修复 Android 17
+  （API 37）上 `adb pair` 的 TLS keying material 导出失败；修复导出中偶发被拉回本应用导致截错屏、以及导出服务启动
+  偶发 `ForegroundServiceDidNotStartInTime` 崩溃。
 - `1.1.1`（versionCode 4）：修复真机无线 ADB 配对超时——正确区分「配对弹窗端口」与「无线调试主页连接端口」，
   配对成功后优先用截图里的连接端口直连；重绘 iOS 风格应用图标与应用内品牌标识。
 - `1.1.0`（versionCode 3）：新增 App 内更新检查与官网下载页；优化录屏转截图与长图拼接稳定性。

@@ -23,8 +23,8 @@ android {
         applicationId = "com.dsh.wechatshot"
         minSdk = 30
         targetSdk = 37
-        versionCode = 4
-        versionName = "1.1.1"
+        versionCode = 5
+        versionName = "1.1.2"
     }
 
     signingConfigs {
@@ -85,6 +85,10 @@ dependencies {
     implementation("com.github.MuntashirAkon:libadb-android:3.1.1") {
         exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
     }
+    // Android 17（API 37）把平台 Conscrypt 的 exportKeyingMaterial 移出可反射白名单，
+    // 而 ADB 无线配对必须用它导出 TLS keying material。自带一份 Conscrypt（公共 API）后，
+    // libadb 会自动改用它完成 TLSv1.3 配对，否则配对一定失败（NoSuchMethodException）。
+    implementation("org.conscrypt:conscrypt-android:2.5.2")
     implementation("org.bouncycastle:bcprov-jdk18on:1.81")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.81")
 

@@ -65,6 +65,10 @@ class ExportService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // 只要是通过 startForegroundService() 启动的，就必须尽快调用 startForeground()，
+        // 否则系统会抛 RemoteServiceException（ForegroundServiceDidNotStartInTime）。
+        // 先无条件进入前台，再根据 action 处理；无效请求直接 stopSelf 也不会再崩溃。
+        ensureForeground()
         when (intent?.action) {
             ACTION_STOP -> {
                 if (job?.isActive == true) {
@@ -83,6 +87,7 @@ class ExportService : Service() {
                 }
                 val request = readRequest(intent)
                 if (request == null) {
+                    NotificationHelper.update(this, "导出参数不完整", "已取消本次导出", false)
                     stopSelf(startId)
                     return START_NOT_STICKY
                 }
@@ -92,6 +97,16 @@ class ExportService : Service() {
         }
         stopSelf(startId)
         return START_NOT_STICKY
+    }
+
+    private fun ensureForeground() {
+        runCatching {
+            startForeground(
+                NotificationHelper.NOTIFICATION_ID,
+                NotificationHelper.build(this, "正在导出聊天截图", "正在准备…", ongoing = true),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+            )
+        }
     }
 
     private fun startExport(request: ExportRequest, startId: Int) {

@@ -129,6 +129,7 @@ fun AutoPairScreen(
 
     val conn by AdbManager.connection.collectAsState()
     val discovery by AdbManager.pairing.collectAsState()
+    val pairingResult by PairingBridge.result.collectAsState()
 
     var stage by remember {
         mutableStateOf(
@@ -138,7 +139,7 @@ fun AutoPairScreen(
     }
     var headline by remember { mutableStateOf("等待截图") }
     var statusText by remember {
-        mutableStateOf("先按下面 4 步打开配对弹窗并截屏，然后切回本 App，这里会自动识别。")
+        mutableStateOf("点「打开无线调试设置」，本应用会在后台自动识别配对弹窗截图并配对，无需切回。")
     }
     var detailText by remember { mutableStateOf("") }
     var preview by remember { mutableStateOf<ImageBitmap?>(null) }
@@ -155,6 +156,11 @@ fun AutoPairScreen(
     var finished by remember { mutableStateOf(false) }
     var recognizing by remember { mutableStateOf(false) }
     var selfTestMode by remember { mutableStateOf(false) }
+    var pairingWaitStarted by remember { mutableStateOf(false) }
+    var pendingOpenSettingsAfterPermission by remember { mutableStateOf(false) }
+    var pendingOpenSettingsReady by remember { mutableStateOf(false) }
+    // 无障碍配对助手是否已启用（真机主路径：直接读取配对弹窗文本，无需截图）
+    var assistEnabled by remember { mutableStateOf(PairingAssist.isEnabled(context)) }
 
     // -----------------------------------------------------------------------------------
     // 基础工具
@@ -347,6 +353,10 @@ fun AutoPairScreen(
 
     fun handleScreenshot(bitmap: Bitmap, source: ScreenshotPairWatcher.Source) {
         if (finished) return
+        if (conn.connected) {
+            log("已经连接，忽略新截图（${source.name}）")
+            return
+        }
         if (stage == PairStage.Pairing) {
             log("配对进行中，忽略新截图（${source.name}）")
             return
@@ -395,10 +405,17 @@ fun AutoPairScreen(
         permissionGranted = granted
         permissionDeniedOnce = !granted
         if (granted) {
-            stage = PairStage.WaitingScreenshot
-            statusText = "已获得相册权限，正在查找最新截图…"
-            watcher.pollLatest(force = true)
+            if (pendingOpenSettingsAfterPermission) {
+                // 用户本来是想「去设置里打开配对弹窗」，授权后继续：启动后台配对服务并跳转设置
+                pendingOpenSettingsAfterPermission = false
+                pendingOpenSettingsReady = true
+            } else {
+                stage = PairStage.WaitingScreenshot
+                statusText = "已获得相册权限，正在查找最新截图…"
+                watcher.pollLatest(force = true)
+            }
         } else {
+            pendingOpenSettingsAfterPermission = false
             stage = PairStage.Idle
             headline = "没有相册权限"
             statusText = "无法读取系统截图"
@@ -406,9 +423,63 @@ fun AutoPairScreen(
         }
     }
 
+    /**
+     * 启动「后台配对等待」前台服务，然后跳转到系统设置。
+     *
+     * 真机上（ColorOS/Android 17）一旦把 App 切走，配对弹窗就会被系统关闭，配对端口随之失效，
+     * 所以必须让应用进程以「前台服务」的级别留在后台：用户在设置里截图后，服务立即 OCR 并配对，
+     * 此时弹窗仍在前台、端口仍可用。
+     */
+    fun startBackgroundPairingAndOpenSettings() {
+        // 主路径：无障碍配对助手。ColorOS 等机型会冻结后台应用的主线程定时器，
+        // 截图监听在后台不可靠；无障碍服务由系统绑定，可以在设置界面前台时直接读取配对弹窗文本。
+        if (PairingAssist.isEnabled(context)) {
+            withLocalNetworkPermission {
+                PairingBridge.clear()
+                pairingWaitStarted = false
+                PairingAssist.requestAssist(context)
+                stage = PairStage.WaitingScreenshot
+                headline = "自动配对已就绪"
+                statusText = "正在打开无线调试设置：配对弹窗出现后会自动识别配对码并连接，无需截图、无需切回。"
+                detailText = ""
+                log("无障碍自动配对：已登记配对请求，正在打开无线调试设置")
+                openDeveloperOptions(context)
+            }
+            return
+        }
+        if (!ScreenshotPairWatcher.hasPermission(context)) {
+            pendingOpenSettingsAfterPermission = true
+            statusText = "需要「照片和视频」权限才能读取系统截图，请在弹窗里允许…"
+            permissionLauncher.launch(ScreenshotPairWatcher.permissionName())
+            return
+        }
+        withLocalNetworkPermission {
+            PairingBridge.clear()
+            pairingWaitStarted = true
+            PairingWaitService.start(context)
+            log("已启动后台配对服务：请在设置里打开配对弹窗后直接截屏，会自动配对")
+            statusText = "已开启后台自动配对：请在设置里打开配对弹窗，截图后无需切回本页。"
+            openDeveloperOptions(context)
+        }
+    }
+
+    // 相册权限授予后自动继续「启动后台配对 + 打开设置」
+    LaunchedEffect(pendingOpenSettingsReady) {
+        if (pendingOpenSettingsReady) {
+            pendingOpenSettingsReady = false
+            startBackgroundPairingAndOpenSettings()
+        }
+    }
+
     DisposableEffect(Unit) {
         watcher.start(activity)
-        onDispose { watcher.stop() }
+        onDispose {
+            watcher.stop()
+            // 离开自动配对页时不再保留后台服务（若已配对成功则服务已自行停止）
+            if (pairingWaitStarted && !finished) {
+                PairingWaitService.stop(context)
+            }
+        }
     }
 
     DisposableEffect(activity) {
@@ -417,7 +488,8 @@ fun AutoPairScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 permissionGranted = ScreenshotPairWatcher.hasPermission(context)
                 localNetGranted = hasLocalNetworkPermission()
-                if (permissionGranted && !finished && stage != PairStage.Pairing) {
+                assistEnabled = PairingAssist.isEnabled(context)
+                if (permissionGranted && !finished && stage != PairStage.Pairing && !conn.connected) {
                     // 用户很可能刚在「设置」里截了图再切回来：回前台立刻查一次最新截图
                     watcher.pollLatest(force = false)
                 }
@@ -427,9 +499,30 @@ fun AutoPairScreen(
         onDispose { lifecycleOwner?.lifecycle?.removeObserver(observer) }
     }
 
+    // 后台配对服务的结果（用户切到设置里截图时，由 PairingWaitService 在后台完成配对）
+    LaunchedEffect(pairingResult) {
+        val result = pairingResult ?: return@LaunchedEffect
+        if (result.success) {
+            if (!finished) {
+                pairingWaitStarted = false
+                stage = PairStage.Done
+                headline = "已连接"
+                statusText = result.message
+                detailText = ""
+                finishSuccess()
+            }
+        } else if (!finished) {
+            stage = PairStage.Failed
+            headline = "配对/连接失败"
+            statusText = "这次没有连接成功"
+            detailText = result.message
+            pairingWaitStarted = false
+        }
+    }
+
     // 与 AdbManager 的全局连接状态保持同步
     LaunchedEffect(conn) {
-        if (conn.connected && pairStarted && !finished) {
+        if (conn.connected && !finished && (pairStarted || pairingWaitStarted)) {
             finishSuccess()
         } else if (conn.busy && pairStarted) {
             stage = PairStage.Pairing
@@ -573,6 +666,22 @@ fun AutoPairScreen(
             }
         }
 
+        // 无障碍自动配对助手（真机主路径：应用在后台也能读取配对弹窗并完成配对）
+        if (assistEnabled) {
+            IosBanner(
+                text = "自动配对助手已开启：点「打开无线调试设置」后会直接跳到配对入口，配对码会被自动读取并连接，无需截图。",
+                kind = IosBannerKind.Info,
+            )
+        } else {
+            IosBanner(
+                text = "部分机型（如 ColorOS）会冻结后台应用，截图识别不一定可靠。开启「自动配对助手」后，" +
+                    "应用会直接读取配对弹窗里的配对码完成连接，不需要截图。",
+                kind = IosBannerKind.Warning,
+                actionText = "开启",
+                onAction = { PairingAssist.openAccessibilitySettings(context) },
+            )
+        }
+
         // 主操作
         IosPrimaryButton(
             text = if (permissionGranted) "我已截图，开始识别" else "授权并识别最新截图",
@@ -593,9 +702,9 @@ fun AutoPairScreen(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             IosSecondaryButton(
-                text = "打开无线调试设置",
+                text = if (assistEnabled) "自动配对：打开无线调试设置" else "打开无线调试设置",
                 modifier = Modifier.weight(1f),
-            ) { openDeveloperOptions(context) }
+            ) { startBackgroundPairingAndOpenSettings() }
             IosSecondaryButton(
                 text = if (conn.connected) "已连接，重新连接" else "直接尝试连接",
                 modifier = Modifier.weight(1f),
@@ -704,14 +813,13 @@ fun AutoPairScreen(
             Column {
                 GuideStep(
                     index = 1,
-                    title = "打开「无线调试」",
-                    subtitle = "设置 → 开发者选项 → 无线调试。手机和本机需要连同一个 WiFi。" +
-                        "第一次使用要先在开发者选项里开启无线调试。",
+                    title = "点上方「打开无线调试设置」",
+                    subtitle = "本应用会在后台开启自动配对，然后跳到系统的无线调试页面（保持本应用在后台即可）。",
                 )
                 Hairline(startIndent = 54.dp)
                 GuideStep(
                     index = 2,
-                    title = "点「使用配对码配对设备」",
+                    title = "点「输入配对码配对设备」",
                     subtitle = "弹窗会显示 6 位配对码和「IP 地址和端口」，请让它们完整出现在一屏内，且不要关闭弹窗。",
                 )
                 Hairline(startIndent = 54.dp)
@@ -723,8 +831,8 @@ fun AutoPairScreen(
                 Hairline(startIndent = 54.dp)
                 GuideStep(
                     index = 4,
-                    title = "切回本 App",
-                    subtitle = "回到这里会自动识别并配对；如果没反应，点上面的「我已截图，开始识别」。",
+                    title = "等待自动配对",
+                    subtitle = "截图后应用会在后台立刻识别并配对，通知栏会提示「配对成功」，回到本 App 即可开始导出。",
                 )
             }
         }

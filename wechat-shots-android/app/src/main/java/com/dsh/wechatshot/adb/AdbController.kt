@@ -318,20 +318,23 @@ class AdbController(context: Context) : AbsAdbConnectionManager() {
     }
 
     fun launchWeChat() {
-        shell("am force-stop com.tencent.mm", 10_000)
-        SystemClock.sleep(500)
+        // 注意：不要在真机上 force-stop 微信。
+        // ColorOS 在微信被强杀后会把之前的任务栈恢复出来，导致我们的 App 被重新拉到前台，
+        // 自动化截图就会拍到「自家界面」而不是微信（真机实测踩过）。
+        // 直接拉起/前置微信任务即可，冷启动慢的问题交给调用方的等待逻辑。
         var output = runCatching {
-            shell("monkey -p com.tencent.mm -c android.intent.category.LAUNCHER 1", 15_000)
+            shell("am start -W -n com.tencent.mm/.ui.LauncherUI", 25_000)
         }.getOrDefault("")
-        if (!output.contains("Events injected")) {
+        if (!output.contains("Status: ok") && !output.contains("LaunchState")) {
+            runCatching { shell("input keyevent 3", 5_000) }
             output = runCatching {
-                shell("am start -n com.tencent.mm/.ui.LauncherUI", 15_000)
-            }.getOrDefault("")
+                shell("monkey -p com.tencent.mm -c android.intent.category.LAUNCHER 1", 20_000)
+            }.getOrDefault(output)
         }
         if (output.contains("No activities found") || output.contains("does not exist")) {
             throw IOException("未安装微信（com.tencent.mm）")
         }
-        SystemClock.sleep(2_000)
+        SystemClock.sleep(1_200)
     }
 
     /** 当前前台 Activity 的包名；读不到时返回空字符串。 */

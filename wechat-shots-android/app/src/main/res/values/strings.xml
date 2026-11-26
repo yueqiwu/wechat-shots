@@ -4,4 +4,6 @@
     <string name="notif_channel_name">导出任务</string>
     <string name="notif_channel_desc">聊天截图导出进度与结果</string>
     <string name="notif_action_stop">停止导出</string>
+    <string name="pairing_assist_label">聊天截图导出 · 自动配对助手</string>
+    <string name="pairing_accessibility_description">用于在「无线调试」的配对弹窗出现时自动读取配对码并完成配对。只读取系统设置界面的文字，不读取其他应用内容，也不会收集或上传任何数据。</string>
 </resources>
