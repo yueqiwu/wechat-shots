@@ -1,28 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- iOS 风格前景：白色对话气泡 + 蓝色文字行（108dp 自适应图标安全区内） -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
+
+    <!-- 对话气泡（含左下小尾巴） -->
+        <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.9"
+        android:scaleY="0.9">
+<path
         android:fillColor="#FFFFFF"
-        android:pathData="M28,29 h52 a8,8 0 0 1 8,8 v30 a8,8 0 0 1 -8,8 h-26 l-14,11 v-11 h-12 a8,8 0 0 1 -8,-8 v-30 a8,8 0 0 1 8,-8 z" />
+        android:pathData="M34,28 H74 A12,12 0 0 1 86,40 V66 A12,12 0 0 1 74,78 H56 L42,90 V78 H34 A12,12 0 0 1 22,66 V40 A12,12 0 0 1 34,28 Z" />
+
+    <!-- 三行文字（蓝色圆角条） -->
     <path
-        android:fillColor="#0F766E"
-        android:pathData="M38,44 a5,5 0 1 0 0,10 a5,5 0 1 0 0,-10 z" />
+        android:fillColor="#2E86FF"
+        android:pathData="M34,43.5 a2.5,2.5 0 0 1 2.5,-2.5 h29 a2.5,2.5 0 0 1 2.5,2.5 a2.5,2.5 0 0 1 -2.5,2.5 h-29 a2.5,2.5 0 0 1 -2.5,-2.5 z" />
     <path
-        android:fillColor="#0F766E"
-        android:pathData="M54,44 a5,5 0 1 0 0,10 a5,5 0 1 0 0,-10 z" />
+        android:fillColor="#2E86FF"
+        android:pathData="M34,52 a2.5,2.5 0 0 1 2.5,-2.5 h39 a2.5,2.5 0 0 1 2.5,2.5 a2.5,2.5 0 0 1 -2.5,2.5 h-39 a2.5,2.5 0 0 1 -2.5,-2.5 z" />
     <path
-        android:fillColor="#0F766E"
-        android:pathData="M70,44 a5,5 0 1 0 0,10 a5,5 0 1 0 0,-10 z" />
-    <path
-        android:fillColor="#0F766E"
-        android:pathData="M75,72 a13,13 0 1 0 0,26 a13,13 0 1 0 0,-26 z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M75,78 a7,7 0 1 0 0,14 a7,7 0 1 0 0,-14 z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M69,83 h12 v3 h-12 z" />
+        android:fillColor="#2E86FF"
+        android:pathData="M34,60.5 a2.5,2.5 0 0 1 2.5,-2.5 h17 a2.5,2.5 0 0 1 2.5,2.5 a2.5,2.5 0 0 1 -2.5,2.5 h-17 a2.5,2.5 0 0 1 -2.5,-2.5 z" />
+
+    </group>
 </vector>

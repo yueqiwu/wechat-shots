@@ -237,7 +237,7 @@ fun AutoPairScreen(
     // OCR + 解析 + 配对
     // -----------------------------------------------------------------------------------
 
-    suspend fun beginPair(code: String, portText: String?, host: String?) {
+    suspend fun beginPair(code: String, portText: String?, host: String?, connectPort: Int? = null) {
         if (finished) return
         if (AdbManager.connection.value.busy) {
             statusText = "上一次连接还在进行中，请稍候…"
@@ -247,7 +247,7 @@ fun AutoPairScreen(
         if (Build.VERSION.SDK_INT >= 36 && !hasLocalNetworkPermission()) {
             headline = "需要本地网络权限"
             statusText = "Android 17 的无线 ADB 需要「本地网络访问」权限，授予后会自动继续配对…"
-            withLocalNetworkPermission { scope.launch { beginPair(code, portText, host) } }
+            withLocalNetworkPermission { scope.launch { beginPair(code, portText, host, connectPort) } }
             return
         }
         pairStarted = true
@@ -278,12 +278,12 @@ fun AutoPairScreen(
             manualPort = discoveredPort.toString()
             statusText = "已发现配对端口 $discoveredPort，正在配对…"
             log("发起配对：code=$code port=$discoveredPort host=${host ?: "自动"}")
-            AdbManager.pair(code, discoveredPort.toString(), hostOverride = host)
+            AdbManager.pair(code, discoveredPort.toString(), hostOverride = host, connectPort = connectPort)
         } else {
             manualPort = portText
             statusText = "正在用配对码 $code 连接（端口 $portText）…"
             log("发起配对：code=$code port=$portText host=${host ?: "自动"}")
-            AdbManager.pair(code, portText, hostOverride = host)
+            AdbManager.pair(code, portText, hostOverride = host, connectPort = connectPort)
         }
     }
 
@@ -323,7 +323,7 @@ fun AutoPairScreen(
                 stage = PairStage.Recognized
                 manualCode = code
                 manualPort = port.toString()
-                if (allowAutoPair) beginPair(code, port.toString(), result.host)
+                if (allowAutoPair) beginPair(code, port.toString(), result.host, result.connectPort)
             }
 
             code != null -> {
@@ -331,7 +331,7 @@ fun AutoPairScreen(
                 statusText = "配对码 $code，正在自动查找配对端口…"
                 stage = PairStage.Recognized
                 manualCode = code
-                if (allowAutoPair) beginPair(code, null, result.host)
+                if (allowAutoPair) beginPair(code, null, result.host, result.connectPort)
             }
 
             else -> {
@@ -514,7 +514,7 @@ fun AutoPairScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (code != null) IosTagChip("配对码 $code", colors.accent)
-                        if (port != null) IosTagChip("端口 $port", colors.green)
+                        if (port != null) IosTagChip("配对端口 $port", colors.green)
                         if (host != null) IosTagChip("IP $host", colors.orange)
                     }
                 }
@@ -605,7 +605,14 @@ fun AutoPairScreen(
                     stage = PairStage.Pairing
                     headline = "正在连接"
                     statusText = "正在尝试直接连接已配对的设备…"
-                    AdbManager.connectAuto()
+                    val cp = parsed?.connectPort
+                    val ph = parsed?.host
+                    if (cp != null && cp in 1..65535 && ph != null) {
+                        log("直接连接：$ph:$cp（来自截图识别）")
+                        AdbManager.connectManual(ph, cp.toString())
+                    } else {
+                        AdbManager.connectAuto()
+                    }
                 }
             }
         }

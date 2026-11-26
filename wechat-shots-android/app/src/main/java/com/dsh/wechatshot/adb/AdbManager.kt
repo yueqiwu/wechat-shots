@@ -239,6 +239,7 @@ object AdbManager {
         manualPort: String,
         onSuccess: (() -> Unit)? = null,
         hostOverride: String? = null,
+        connectPort: Int? = null,
     ) {
         if (_connection.value.busy) return
         val code = pairingCode.filter { it.isDigit() }
@@ -278,6 +279,13 @@ object AdbManager {
                 }
                 _connection.update { it.copy(status = "配对成功，正在建立 ADB 连接…") }
                 var connected = false
+                // 截图里若识别到「无线调试主页」的连接端口，配对成功后直接用它连（不依赖 mDNS）
+                if (connectPort != null && connectPort in 1..65535) {
+                    _connection.update {
+                        it.copy(status = "配对成功，正在连接 " + host + ":" + connectPort + "…")
+                    }
+                    connected = runCatching { adb.connectManual(host, connectPort) }.getOrDefault(false)
+                }
                 // 配对成功后系统可能需要一点时间才开放 TLS 端口，重试 3 次
                 for (attempt in 0..2) {
                     if (attempt > 0) delay(1_200L * attempt)

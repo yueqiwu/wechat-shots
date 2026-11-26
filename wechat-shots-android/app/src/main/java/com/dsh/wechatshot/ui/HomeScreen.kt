@@ -1,5 +1,6 @@
 package com.dsh.wechatshot.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,10 +21,12 @@ import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.dsh.wechatshot.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
 /** 首页：顶部品牌 + 大标题 + 两张方案卡片 + 选择说明。 */
@@ -43,16 +46,15 @@ fun HomeScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(9.dp))
-                    .background(Brush.linearGradient(listOf(colors.green, colors.accent))),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Brush.linearGradient(listOf(colors.accent, colors.accent2))),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Smartphone,
+                Image(
+                    painter = painterResource(R.drawable.ic_brand_mark),
                     contentDescription = null,
-                    tint = androidx.compose.ui.graphics.Color.White,
-                    modifier = Modifier.size(19.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
             Spacer(modifier = Modifier.width(9.dp))

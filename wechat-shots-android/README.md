@@ -236,8 +236,8 @@ dist/                          最终 APK
 
 ```bash
 python ../tools/release_bt.py \
-  --apk dist/wechat-shots-1.1.0-release.apk \
-  --version 1.1.0 --code 3 \
+  --apk dist/wechat-shots-1.1.1-release.apk \
+  --version 1.1.1 --code 4 \
   --notes "更新说明第一行
 第二行"
 ```
@@ -249,6 +249,8 @@ python ../tools/release_bt.py \
 
 ## 版本记录
 
+- `1.1.1`（versionCode 4）：修复真机无线 ADB 配对超时——正确区分「配对弹窗端口」与「无线调试主页连接端口」，
+  配对成功后优先用截图里的连接端口直连；重绘 iOS 风格应用图标与应用内品牌标识。
 - `1.1.0`（versionCode 3）：新增 App 内更新检查与官网下载页；优化录屏转截图与长图拼接稳定性。
 - `1.0.1`（versionCode 2）：修复已知问题。
 - `1.0.0`（versionCode 1）：首个版本。

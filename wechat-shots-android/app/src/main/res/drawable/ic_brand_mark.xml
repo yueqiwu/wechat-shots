@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用内品牌标记：白色对话气泡 + 蓝色文字行（与桌面图标同款图形） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,28 H74 A12,12 0 0 1 86,40 V66 A12,12 0 0 1 74,78 H56 L42,90 V78 H34 A12,12 0 0 1 22,66 V40 A12,12 0 0 1 34,28 Z" />
+    <path
+        android:fillColor="#2E86FF"
+        android:pathData="M34,43.5 a2.5,2.5 0 0 1 2.5,-2.5 h29 a2.5,2.5 0 0 1 2.5,2.5 a2.5,2.5 0 0 1 -2.5,2.5 h-29 a2.5,2.5 0 0 1 -2.5,-2.5 z" />
+    <path
+        android:fillColor="#2E86FF"
+        android:pathData="M34,52 a2.5,2.5 0 0 1 2.5,-2.5 h39 a2.5,2.5 0 0 1 2.5,2.5 a2.5,2.5 0 0 1 -2.5,2.5 h-39 a2.5,2.5 0 0 1 -2.5,-2.5 z" />
+    <path
+        android:fillColor="#2E86FF"
+        android:pathData="M34,60.5 a2.5,2.5 0 0 1 2.5,-2.5 h17 a2.5,2.5 0 0 1 2.5,2.5 a2.5,2.5 0 0 1 -2.5,2.5 h-17 a2.5,2.5 0 0 1 -2.5,-2.5 z" />
+</vector>

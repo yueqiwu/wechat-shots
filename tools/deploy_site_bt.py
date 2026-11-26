@@ -109,7 +109,7 @@ def verify(public_url, with_version_json):
     r = requests.get(public_url, timeout=60, headers={"Cache-Control": "no-cache"})
     # 宝塔静态服务不返回 charset，requests 会退回 ISO-8859-1；页面本身是 UTF-8，显式按字节解码
     body = r.content.decode("utf-8", errors="replace")
-    markers = ["聊天截图导出", "无线 ADB", "录屏", "wechat-shots-1.1.0.apk"]
+    markers = ["聊天截图导出", "无线 ADB", "录屏", "wechat-shots-"]
     ok = r.status_code == 200 and all(m in body for m in markers)
     checks.append(("首页 " + public_url, r.status_code, len(body), ok, ", ".join(m for m in markers if m in body)))
     print("  首页          : HTTP %s  %d bytes  %s" % (r.status_code, len(body), "OK" if ok else "内容缺失!"))

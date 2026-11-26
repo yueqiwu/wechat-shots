@@ -25,16 +25,21 @@ object PairingCodeParser {
 
     data class Result(
         val code: String? = null,
+        /** 配对弹窗「IP 地址和端口」里的端口（adb pair 用这个） */
         val port: Int? = null,
+        /** 无线调试主页「IP 地址和端口」里的端口（配对成功后 TLS 连接用） */
+        val connectPort: Int? = null,
         val host: String? = null,
         val codeScore: Int = 0,
         val portScore: Int = 0,
         val codeEvidence: String = "",
         val portEvidence: String = "",
+        val connectEvidence: String = "",
         val lines: List<String> = emptyList(),
     ) {
         val hasCode: Boolean get() = code != null
         val hasPort: Boolean get() = port != null
+        val hasConnectPort: Boolean get() = connectPort != null
         val isEmpty: Boolean get() = code == null && port == null
     }
 
@@ -70,16 +75,20 @@ object PairingCodeParser {
             if (first.score >= CODE_ACCEPT_SCORE && clearlyBest) bestCode = first
         }
 
-        val portCand = findPort(norm)
+        val portCands = findPorts(norm)
+        val pairPort = choosePairPort(portCands, bestCode?.lineIndex)
+        val connectCand = chooseConnectPort(portCands, pairPort)
 
         return Result(
             code = bestCode?.value,
-            port = portCand?.port,
-            host = portCand?.host,
+            port = pairPort?.port,
+            connectPort = connectCand?.port,
+            host = pairPort?.host ?: connectCand?.host,
             codeScore = bestCode?.score ?: 0,
-            portScore = portCand?.score ?: 0,
+            portScore = pairPort?.score ?: 0,
             codeEvidence = bestCode?.evidence ?: "",
-            portEvidence = portCand?.evidence ?: "",
+            portEvidence = pairPort?.evidence ?: "",
+            connectEvidence = connectCand?.evidence ?: "",
             lines = norm,
         )
     }
@@ -255,7 +264,12 @@ object PairingCodeParser {
         val evidence: String,
     )
 
-    private data class ScoredCode(val value: String, val score: Int, val evidence: String)
+    private data class ScoredCode(
+        val value: String,
+        val score: Int,
+        val evidence: String,
+        val lineIndex: Int,
+    )
 
     private fun scoreCode(
         cand: CodeCandidate,
@@ -303,7 +317,7 @@ object PairingCodeParser {
         // 完全无上下文兜底：既无强弱关键词且文档里也没有任何配对相关词
         if (!anyStrong && !weakHere && !weakBefore && !weakAfter) score -= 20
 
-        return ScoredCode(cand.value, score, line.trim())
+        return ScoredCode(cand.value, score, line.trim(), cand.lineIndex)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -323,12 +337,19 @@ object PairingCodeParser {
     private val portNumberRegex = Regex("(?<![0-9.])(\\d{2,5})(?![0-9.])")
     private val dateLikeRegex = Regex("^(?:19|20)\\d{2}$")
 
-    private data class ScoredPort(val port: Int, val host: String?, val score: Int, val evidence: String)
+    private data class ScoredPort(
+        val port: Int,
+        val host: String?,
+        val score: Int,
+        val evidence: String,
+        val lineIndex: Int,
+    )
 
-    private fun findPort(lines: List<String>): ScoredPort? {
+    /** 收集所有端口候选（IPv4:port、端口关键字、独立 5 位数字兜底）。 */
+    private fun findPorts(lines: List<String>): List<ScoredPort> {
         val cands = mutableListOf<ScoredPort>()
 
-        // 1) IPv4:port —— 最可信
+        // 1) IPv4:port —— 最可信：无线调试主页是连接端口，配对弹窗里是配对端口
         lines.forEachIndexed { idx, line ->
             for (m in ipPortRegex.findAll(line)) {
                 val host = m.groupValues[1]
@@ -339,16 +360,16 @@ object PairingCodeParser {
                 var score = 90
                 if (sameLineKeyword) score += 10
                 if (anyKeyword) score += 10
-                cands += ScoredPort(port, host, score, line.trim())
+                cands += ScoredPort(port, host, score, line.trim(), idx)
             }
         }
 
-        // 2) 「端口：41234」/「Port 41234」或「端口」相邻行的独立数字
+        // 2) 「端口：41234」「Port 41234」或「端口」相邻行的独立数字
         lines.forEachIndexed { idx, line ->
             for (m in portKeywordNumberRegex.findAll(line)) {
                 val port = m.groupValues[1].toIntOrNull() ?: continue
                 if (!validPort(port)) continue
-                cands += ScoredPort(port, null, 70, line.trim())
+                cands += ScoredPort(port, null, 70, line.trim(), idx)
             }
         }
         lines.forEachIndexed { idx, line ->
@@ -362,29 +383,72 @@ object PairingCodeParser {
                 val port = raw.toIntOrNull() ?: continue
                 if (!validPort(port)) continue
                 if (raw.length == 6) continue
-                cands += ScoredPort(port, null, 55, line.trim())
+                cands += ScoredPort(port, null, 55, line.trim(), idx)
             }
         }
 
-        // 3) 无关键词兜底：全文唯一的 5 位数字（1024..65535），仅低置信接受
+        // 3) 无关键词兜底：全文唯一的 5 位数字（仅低置信度接受）
         val unqualified = mutableListOf<ScoredPort>()
-        lines.forEach { line ->
+        lines.forEachIndexed { idx, line ->
             for (m in portNumberRegex.findAll(line)) {
                 val raw = m.groupValues[1]
                 if (raw.length != 5) continue
                 val port = raw.toIntOrNull() ?: continue
                 if (!validPort(port) || dateLikeRegex.matches(raw)) continue
-                unqualified += ScoredPort(port, null, 25, line.trim())
+                unqualified += ScoredPort(port, null, 25, line.trim(), idx)
             }
         }
         if (unqualified.map { it.port }.distinct().size == 1) cands += unqualified
 
+        return cands
+    }
+
+    /**
+     * 配对端口 = 配对弹窗里的端口。
+     *
+     * 关键：系统「无线调试」主页和「使用配对码配对设备」弹窗都显示「IP 地址和端口」，
+     * 两者都是 IPv4:port、关键词分值完全相同（真机截图：主页 41539、弹窗 36865）。
+     * 若按分值取第一个会误把主页的连接端口当配对端口，导致 adb pair 超时。
+     * 弹窗端口一定出现在配对码所在行之后 1~4 行，因此按「配对码行距」优先选取。
+     */
+    private fun choosePairPort(cands: List<ScoredPort>, codeLine: Int?): ScoredPort? {
         if (cands.isEmpty()) return null
-        val best = cands.maxByOrNull { it.score } ?: return null
-        val second = cands.filter { it.port != best.port }.maxByOrNull { it.score }
+        // 低于 40 分的候选（无关键词的 5 位数字兜底）不作为端口，避免误判
+        val distinct = cands.filter { it.score >= 40 }.distinctBy { it.port to it.lineIndex }
+        if (distinct.isEmpty()) return null
+        if (codeLine != null) {
+            val after = distinct.filter { it.lineIndex > codeLine && it.lineIndex <= codeLine + 4 }
+            if (after.isNotEmpty()) {
+                return after.maxWithOrNull(
+                    compareBy<ScoredPort> { it.score }.thenBy { -kotlin.math.abs(it.lineIndex - codeLine) },
+                )
+            }
+            val near = distinct.filter { kotlin.math.abs(it.lineIndex - codeLine) <= 3 }
+            if (near.isNotEmpty()) {
+                return near.maxWithOrNull(
+                    compareBy<ScoredPort> { it.score }.thenBy { -kotlin.math.abs(it.lineIndex - codeLine) },
+                )
+            }
+        }
+        val sorted = distinct.sortedByDescending { it.score }
+        val best = sorted.first()
+        val second = sorted.firstOrNull { it.port != best.port }
         if (best.score < 40) return null
-        if (second != null && best.score - second.score < 10 && best.score < 80) return null
+        if (codeLine == null && second != null && best.score - second.score < 10 && best.score < 80) return null
         return best
+    }
+
+    /** 连接端口 = 无线调试主页「IP 地址和端口」的端口（配对成功后直接 TLS 连接用）。 */
+    private fun chooseConnectPort(cands: List<ScoredPort>, pair: ScoredPort?): ScoredPort? {
+        if (cands.isEmpty()) return null
+        val distinct = cands.filter { it.score >= 40 }.distinctBy { it.port to it.lineIndex }
+        val others = distinct.filter { it.port != pair?.port && it.host != null }
+        if (others.isEmpty()) return null
+        val pairLine = pair?.lineIndex
+        return others.maxWithOrNull(
+            compareBy<ScoredPort> { it.score }
+                .thenBy { if (pairLine != null && it.lineIndex > pairLine) 1 else 0 },
+        )
     }
 
     private fun validPort(port: Int): Boolean = port in 1..65535

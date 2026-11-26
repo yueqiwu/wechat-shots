@@ -1,10 +1,10 @@
 {
-  "versionCode": 3,
-  "versionName": "1.1.0",
-  "apk": "https://qipaclub.top/wechat-shots-app/wechat-shots-1.1.0.apk",
+  "versionCode": 4,
+  "versionName": "1.1.1",
+  "apk": "https://qipaclub.top/wechat-shots-app/wechat-shots-1.1.1.apk",
   "minSdk": 30,
-  "notes": "全新 iOS 风格官网下载页上线，无线 ADB 截图导出 / 录屏转截图 两种方案一目了然\n无线 ADB 截图导出改用共享拼接引擎对齐重建：自动翻页、智能去重，输出页之间重叠从约 50% 降到基本无重复\n新增「录屏转截图」：导入屏幕录制后自动分析滚动、对齐去重并切成完整截图页\n新增截图自动配对（一张截图即可匹配并连接无线 ADB）与应用内版本更新检查",
-  "publishedAt": "2026-11-27T00:28:34+08:00",
-  "size": 99066069,
-  "sha256": "234186a23778e04e687f8aff938b89cd83d8ea73a88a8e9be026b0e2de3567b3"
+  "notes": "修复真机无线 ADB 自动配对：正确区分「配对弹窗里的配对端口」和「无线调试主页的连接端口」，解决一加等机型配对超时（截图自动配对与手动配对均已修复）\n配对成功后优先使用截图识别到的连接端口直连，减少对 mDNS 发现的依赖\n重绘 iOS 风格 App 图标（蓝青渐变圆角 + 白色对话气泡），应用内品牌标识同步更新\n修复「直接尝试连接」在有截图信息时未使用连接端口的问题",
+  "publishedAt": "2026-11-27T01:20:53+08:00",
+  "size": 99084177,
+  "sha256": "7ebf6b5aa6f95e31cce0caecc6774238308101a4429242fa6ab2fef2ce715394"
 }

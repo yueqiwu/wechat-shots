@@ -84,8 +84,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\agent_build.ps1 -Task 
 
 ```bash
 python tools/release_bt.py \
-  --apk wechat-shots-android/dist/wechat-shots-1.1.0-release.apk \
-  --version 1.1.0 --code 3 \
+  --apk wechat-shots-android/dist/wechat-shots-1.1.1-release.apk \
+  --version 1.1.1 --code 4 \
   --notes "新增 xxx
 修复 yyy"
 ```
