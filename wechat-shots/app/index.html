@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>微信录屏 → 聊天截图</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%2307c160'/%3E%3Ctext%20x='16'%20y='23'%20font-size='17'%20font-family='sans-serif'%20fill='%23fff'%20text-anchor='middle'%3E%E5%BE%AE%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">微</span>
+    <div class="brand-txt">
+      <h1>微信录屏 → 聊天截图</h1>
+      <p>视频只在本机浏览器里处理，不上传、不联网</p>
+    </div>
+  </div>
+  <span class="pill" id="enginePill">本地引擎</span>
+</header>
+
+<main>
+  <section class="dropzone" id="dropzone">
+    <input type="file" id="file" accept="video/mp4,video/quicktime,video/webm,video/*" hidden>
+    <div class="dz-icon">＋</div>
+    <p class="dz-main">把微信聊天录屏拖到这里</p>
+    <p class="dz-sub">或 <a href="#" id="btnBrowse">选择文件</a> · mp4 / mov / webm</p>
+    <p class="dz-next"><a href="#" id="btnSample">直接载入示例录屏试试</a></p>
+  </section>
+
+  <section class="work" id="work" hidden>
+    <div class="col col-left">
+      <div class="card video-card">
+        <video id="video" controls playsinline muted></video>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>内容区预览</h2><span class="hint">红区不进截图</span></div>
+        <canvas id="cropCanvas" class="crop"></canvas>
+      </div>
+    </div>
+
+    <aside class="col col-right">
+      <div class="card">
+        <div class="card-head"><h2>参数</h2></div>
+        <div class="field">
+          <label for="fps">抽帧密度</label>
+          <select id="fps">
+            <option value="6">6 帧/秒（快）</option>
+            <option value="10" selected>10 帧/秒（推荐）</option>
+            <option value="16">16 帧/秒（更稳，慢）</option>
+            <option value="24">24 帧/秒（最稳，最慢）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="topCut">顶部裁掉 <b id="topVal">0%</b></label>
+          <input type="range" id="topCut" min="0" max="40" step="1" value="0">
+        </div>
+        <div class="field">
+          <label for="botCut">底部裁掉 <b id="botVal">0%</b></label>
+          <input type="range" id="botCut" min="0" max="40" step="1" value="0">
+        </div>
+        <div class="field">
+          <label for="fmt">图片格式</label>
+          <select id="fmt">
+            <option value="png" selected>PNG（清晰，体积大）</option>
+            <option value="jpeg">JPG（体积小）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card actions">
+        <button id="btnRun" class="btn primary">开始生成截图</button>
+        <button id="btnStop" class="btn ghost" hidden>取消</button>
+        <div class="progress"><div class="bar" id="bar"></div></div>
+        <p class="status" id="status">等待开始</p>
+      </div>
+
+      <div class="card tips">
+        <h2>小贴士</h2>
+        <ul>
+          <li>滑动快慢随意，不用刻意停留——工具会把整段滚动拼成一条完整内容，再按屏切开。</li>
+          <li>截图是这条内容上连续、互不重叠的切片，所以既不漏、也不会重复。</li>
+          <li>手指突然一甩跳过一整屏时，工具会自动加密补帧；还补不回来会提示你。</li>
+          <li>滑到一半回滑也可以，最终按内容位置排好。</li>
+        </ul>
+      </div>
+    </aside>
+  </section>
+
+  <section class="gallery" id="gallery" hidden>
+    <div class="gallery-head">
+      <h2>截图结果 <span id="count" class="count">0 张</span></h2>
+      <div class="gallery-actions">
+        <button id="btnAll" class="btn ghost">全选</button>
+        <button id="btnLong" class="btn ghost">合并成长图</button>
+        <button id="btnZip" class="btn primary">打包 ZIP 下载</button>
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

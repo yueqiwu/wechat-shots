@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 仅 debug 包：给自动化冒烟测试提供一个可直接带视频路径启动的入口。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".video.VideoDebugActivity"
+            android:exported="true"
+            android:label="录屏转截图（调试）"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.WeChatShots" />
+    </application>
+
+</manifest>

@@ -1,0 +1,41 @@
+# ---- Android / Gradle ----
+wechat-shots-android/.gradle/
+wechat-shots-android/build/
+wechat-shots-android/*/build/
+wechat-shots-android/local.properties
+wechat-shots-android/.idea/
+wechat-shots-android/.kotlin/
+wechat-shots-android/captures/
+wechat-shots-android/dist/
+wechat-shots-android/release-keystore.jks
+wechat-shots-android/keystore.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+.gradle-agent.lock
+
+# ---- æ—§ç½‘é¡µå·¥å…· ----
+wechat-shots/node_modules/
+wechat-shots/input.mp4
+wechat-shots/æ ·ä¾‹è¾“å‡º/
+wechat-shots/__pycache__/
+
+# ---- ä¸´æ—¶äº§ç‰© ----
+*.log
+ui-*.png
+video-out-*.png
+screenshot-*.png
+*.zip
+.tmp/
+
+# ²âÊÔÖ¤¾Ý / ¸ùÄ¿Â¼½ØÍ¼
+.tmp_e2e*/
+.tmp_e2e2*/
+wechat-shots-android/test-artifacts/
+/*.png
+
+# Python
+__pycache__/
+*.pyc
+

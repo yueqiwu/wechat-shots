@@ -1,0 +1,10 @@
+{
+  "versionCode": 3,
+  "versionName": "1.1.0",
+  "apk": "https://qipaclub.top/wechat-shots-app/wechat-shots-1.1.0.apk",
+  "minSdk": 30,
+  "notes": "新增 App 内版本更新检查\n新增官网下载页（https://qipaclub.top/wechat-shots-app/）\n优化录屏转截图与长图拼接稳定性\n修复若干已知问题",
+  "publishedAt": "",
+  "size": 0,
+  "sha256": ""
+}

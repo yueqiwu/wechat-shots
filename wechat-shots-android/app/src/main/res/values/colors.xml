@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- iOS 风格启动/窗口底色（Compose 会再绘制渐变，这里避免启动瞬间闪白/闪黑） -->
+    <color name="ios_background">#F2F2F7</color>
+</resources>

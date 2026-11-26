@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">聊天截图导出</string>
+    <string name="notif_channel_name">导出任务</string>
+    <string name="notif_channel_desc">聊天截图导出进度与结果</string>
+    <string name="notif_action_stop">停止导出</string>
+</resources>

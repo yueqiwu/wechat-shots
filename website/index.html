@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>聊天截图导出 · 把聊天记录变成一张完整截图</title>
+<meta name="description" content="聊天截图导出：无线 ADB 自动翻页截图拼接，或上传录屏自动转截图。不重叠、去重、全程本地处理，无需 root。Android 11+">
+<meta name="theme-color" content="#f5f6fa">
+<meta property="og:title" content="聊天截图导出 · 把聊天记录变成一张完整截图">
+<meta property="og:description" content="无线 ADB 自动翻页拼接，或录屏一键转截图。不重叠、去重、本地处理。">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="aurora" aria-hidden="true">
+  <span class="blob b1"></span>
+  <span class="blob b2"></span>
+  <span class="blob b3"></span>
+</div>
+
+<header class="nav" id="nav">
+  <div class="nav-inner container">
+    <a class="brand" href="#top" aria-label="聊天截图导出">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28">
+          <defs>
+            <linearGradient id="gm" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#34c759"/>
+              <stop offset="1" stop-color="#0a84ff"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#gm)" d="M16 2.8C8.7 2.8 2.8 8.1 2.8 14.7c0 3.7 1.9 7 4.9 9.2l-.9 4.6c-.1.6.5 1 .9.7l5.2-3c1 .2 2 .3 3.1.3 7.3 0 13.2-5.3 13.2-11.8S23.3 2.8 16 2.8Z"/>
+          <rect x="9" y="11.4" width="14" height="2.6" rx="1.3" fill="#fff"/>
+          <rect x="9" y="16.2" width="10" height="2.6" rx="1.3" fill="#fff" opacity=".85"/>
+        </svg>
+      </span>
+      <span class="brand-name">聊天截图导出</span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="#solutions">两种方案</a>
+      <a href="#features">功能亮点</a>
+      <a href="#install">安装</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" data-theme-toggle type="button" aria-label="切换深色模式" title="切换深色模式">
+        <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"/></g></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20.2 14.4A8.6 8.6 0 0 1 9.6 3.8 8.8 8.8 0 1 0 20.2 14.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </button>
+      <a class="btn btn-small btn-primary" data-download href="wechat-shots-1.1.0.apk">下载 APK</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- ============================ HERO ============================ -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <div class="badge reveal" data-reveal>
+          <span class="dot"></span>
+          <span><span data-version-name>1.1.0</span> · 支持 Android 11+</span>
+        </div>
+        <h1 class="reveal" data-reveal>
+          把聊天记录，<br>
+          变成<span class="grad">一张完整的截图</span>
+        </h1>
+        <p class="lead reveal" data-reveal>
+          自动翻页、智能去重、无缝拼接。可以用无线 ADB 直接截取聊天界面，
+          也可以上传一段录屏自动转成不重叠的截图。全程本地处理，不上传任何聊天内容。
+        </p>
+        <div class="hero-cta reveal" data-reveal>
+          <a class="btn btn-primary btn-lg" data-download href="wechat-shots-1.1.0.apk">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            下载 APK<span class="btn-sub" data-apk-size>约 94 MB</span>
+          </a>
+          <a class="btn btn-ghost btn-lg" href="#solutions">先看看怎么用</a>
+        </div>
+        <ul class="hero-points reveal" data-reveal>
+          <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>无需 root</li>
+          <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>截图自动拼接去重</li>
+          <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>纯本地离线可用</li>
+        </ul>
+      </div>
+
+      <div class="hero-visual reveal" data-reveal>
+        <div class="phone-wrap">
+          <div class="glow" aria-hidden="true"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="statusbar"><span>9:41</span><span class="sb-icons">▮▮▮ ⌁ ▰</span></div>
+              <div class="chat-head">
+                <span class="back">‹</span>
+                <span class="chat-title">文件传输助手</span>
+                <span class="dots">⋯</span>
+              </div>
+              <div class="chat-body">
+                <div class="daydivider">今天 10:24</div>
+                <div class="msg in">周二下午的评审改到 3 点，会议室 A。</div>
+                <div class="msg out">收到，我提前十分钟到。</div>
+                <div class="msg in">对了，上次那份会议纪要，<br>把结论那几页发我一下。</div>
+                <div class="msg out">好，我整理成长图发你。</div>
+                <div class="msg in">👌</div>
+                <div class="stitch-line" aria-hidden="true"><span>自动拼接 3 页 · 去重 7 条</span></div>
+                <div class="msg in">整理好了，一页看完。</div>
+                <div class="msg out">这么快？太方便了。</div>
+              </div>
+              <div class="chat-input"><span>发送消息…</span><i>＋</i></div>
+              <div class="capture-ring" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="float-card fc1">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 6.5 12 3l8 3.5-8 3.5-8-3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 12l8 3.5 8-3.5M4 17.5 12 21l8-3.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            <div><b>自动翻页</b><small>3 / 3 页已完成</small></div>
+          </div>
+          <div class="float-card fc2">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8 8 9 4.6-1 8-4 8-9V6l-8-3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8.6 12 2.3 2.3 4.5-4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div><b>本地处理</b><small>聊天内容不外传</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container stats reveal" data-reveal>
+      <div class="stat"><b>0</b><span>root 要求</span></div>
+      <div class="stat"><b>100%</b><span>本地处理</span></div>
+      <div class="stat"><b>2</b><span>种导出方案</span></div>
+      <div class="stat"><b>Android 11+</b><span>无线调试直连</span></div>
+    </div>
+
+    <a class="scroll-cue" href="#solutions" aria-label="向下滚动"><span></span></a>
+  </section>
+
+  <!-- ========================= 两种方案 ========================= -->
+  <section class="section" id="solutions">
+    <div class="container">
+      <div class="sec-head reveal" data-reveal>
+        <p class="eyebrow">两种方案 · 按场景选择</p>
+        <h2>想怎么导出，都可以</h2>
+        <p class="sec-desc">同一份聊天记录，既可以现场自动翻页拼接，也可以先录屏再离线转图。两种方案输出结果一致：不重叠、不重复、顺序完整。</p>
+      </div>
+
+      <div class="solutions">
+        <article class="card solution reveal" data-reveal>
+          <div class="solution-top">
+            <span class="pill pill-green">方案 A · 推荐</span>
+            <span class="sol-index">01</span>
+          </div>
+          <div class="sol-icon">
+            <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
+              <rect x="13" y="5" width="22" height="38" rx="5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+              <path d="M19 12h10M19 17h10M19 22h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M35 26.5 26 35.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="m30.5 31 3.2-1.6-1.6 3.2z" fill="currentColor"/>
+            </svg>
+          </div>
+          <h3>无线 ADB 截图导出</h3>
+          <p class="sol-desc">手机与电脑同一 Wi-Fi，打开无线调试即可连接。App 自动滚动聊天页面、连续截图，再按内容拼接去重，一次输出从头到尾不重叠的完整截图。</p>
+          <ul class="sol-list">
+            <li>自动翻页，无需手动截屏</li>
+            <li>按像素对齐拼接，边界不重叠</li>
+            <li>自动识别并去掉重复段落</li>
+            <li>支持一次导出多个会话</li>
+          </ul>
+          <div class="sol-flow">
+            <span>连接无线调试</span><i>→</i><span>选择会话</span><i>→</i><span>自动拼接导出</span>
+          </div>
+        </article>
+
+        <article class="card solution reveal" data-reveal>
+          <div class="solution-top">
+            <span class="pill pill-blue">方案 B · 无需电脑</span>
+            <span class="sol-index">02</span>
+          </div>
+          <div class="sol-icon">
+            <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
+              <rect x="7" y="12" width="24" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="2.4"/>
+              <path d="m31 20 10-6v20l-10-6z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+              <path d="M14 24h10M14 29h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3>录屏转截图</h3>
+          <p class="sol-desc">先用系统录屏把聊天慢慢滑一遍，再导入录屏。App 逐帧分析、对齐拼接，把整段聊天还原成一页页截图并切分页面，不需要连接电脑。</p>
+          <ul class="sol-list">
+            <li>导入录屏，自动抽帧分析</li>
+            <li>按滚动位移拼接，画面不重复</li>
+            <li>自动切分成单页截图</li>
+            <li>不受设备连接方式限制</li>
+          </ul>
+          <div class="sol-flow">
+            <span>系统录屏</span><i>→</i><span>导入录屏</span><i>→</i><span>自动拼接切页</span>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 功能亮点 ========================= -->
+  <section class="section section-alt" id="features">
+    <div class="container">
+      <div class="sec-head reveal" data-reveal>
+        <p class="eyebrow">功能亮点</p>
+        <h2>为「完整截图」打磨的细节</h2>
+        <p class="sec-desc">导出的意义是拿一张图就能看完，所以每一个环节都围绕清晰、完整、不重复来做。</p>
+      </div>
+      <div class="features">
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="6" y="4" width="20" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 10h10M11 15h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 20v6m0 0-2.6-2.6M16 26l2.6-2.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>自动翻页</h3>
+          <p>通过无线 ADB 控制聊天界面逐屏滚动，一页一页自动截取，长对话也不用守着屏幕。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M6 22V10a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 16h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 21.5v-11m0 0-2.8 2.8M16 10.5l2.8 2.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>智能去重</h3>
+          <p>相邻截图的重叠区域按内容比对剔除，只保留新增部分，最终图像里没有重复气泡。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 4 6 8v8c0 7 4.6 10.8 10 12 5.4-1.2 10-5 10-12V8l-10-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m11.5 16 3 3 5.5-5.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>本地处理</h3>
+          <p>截图、录屏、拼接全部在手机本地完成，不上传服务器，聊天内容只留在你的设备里。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="7" y="5" width="14" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="13" y="10" width="14" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
+          <h3>批量导出</h3>
+          <p>一次选择多个会话依次导出，文件名自动带上会话名与时间，整理归档更省事。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 9.5V16l4.5 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>长图不中断</h3>
+          <p>连续滚动拼接整段对话，几十屏的长聊天也能合成一条完整长图，顺序不乱。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 5v6M16 21v6M5 16h6M21 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 8.5 3 3M20.5 20.5l3 3M23.5 8.5l-3 3M11.5 20.5l-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <h3>无需 root</h3>
+          <p>基于系统无线调试能力，普通手机即可使用，不刷机、不装框架，卸载即无残留。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 使用流程 ========================= -->
+  <section class="section" id="how">
+    <div class="container">
+      <div class="sec-head reveal" data-reveal>
+        <p class="eyebrow">三步开始</p>
+        <h2>装好就能用</h2>
+      </div>
+      <ol class="steps">
+        <li class="reveal" data-reveal>
+          <span class="step-no">1</span>
+          <h3>下载并安装</h3>
+          <p>点击下载 APK 安装。首次安装需在系统设置中允许「安装未知来源应用」。</p>
+        </li>
+        <li class="reveal" data-reveal>
+          <span class="step-no">2</span>
+          <h3>连接无线调试</h3>
+          <p>开发者选项里开启「无线调试」，输入配对码完成配对，或直接导入录屏。</p>
+        </li>
+        <li class="reveal" data-reveal>
+          <span class="step-no">3</span>
+          <h3>导出完整截图</h3>
+          <p>选择要导出的会话，等待自动翻页拼接完成，在相册或导出目录查看结果。</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ========================= 下载 + 版本 ========================= -->
+  <section class="section download-section" id="download">
+    <div class="container">
+      <div class="download-card reveal" data-reveal>
+        <div class="dl-left">
+          <h2>下载聊天截图导出</h2>
+          <p>当前版本 <b data-version-name>1.1.0</b> · 支持 Android 11 及以上 · <span data-apk-size>约 94 MB</span></p>
+          <div class="dl-buttons">
+            <a class="btn btn-primary btn-lg" data-download href="wechat-shots-1.1.0.apk">
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              下载 APK
+            </a>
+            <a class="btn btn-ghost btn-lg" href="#install">安装说明</a>
+          </div>
+        </div>
+        <div class="dl-right">
+          <div class="version-card">
+            <div class="vc-head">
+              <span class="vc-badge">最新版本</span>
+              <span class="vc-ver" data-version-name>1.1.0</span>
+            </div>
+            <ul class="vc-notes" id="vcNotes">
+              <li>新增录屏转截图：导入录屏自动拼接切页</li>
+              <li>优化无线 ADB 连接稳定性与自动配对</li>
+              <li>拼接去重更精准，输出完整长图</li>
+              <li>修复已知问题，提升导出速度</li>
+            </ul>
+            <p class="vc-date">发布于 <span id="pubDate">2026-11-27</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 安装 ========================= -->
+  <section class="section section-alt" id="install">
+    <div class="container">
+      <div class="sec-head reveal" data-reveal>
+        <p class="eyebrow">安装步骤</p>
+        <h2>允许未知来源，即可安装</h2>
+        <p class="sec-desc">本应用通过官网直接分发 APK，不经过应用商店。首次安装时系统会提示来源未知，按下面步骤允许即可。</p>
+      </div>
+      <div class="install">
+        <ol class="install-list reveal" data-reveal>
+          <li>
+            <span class="il-no">1</span>
+            <div>
+              <h3>下载 APK 文件</h3>
+              <p>在手机浏览器打开本页，点击下载按钮，等待 <code>wechat-shots-1.1.0.apk</code> 下载完成。</p>
+            </div>
+          </li>
+          <li>
+            <span class="il-no">2</span>
+            <div>
+              <h3>允许安装未知来源应用</h3>
+              <p>点击下载好的 APK，系统提示「为了安全，您的手机不允许安装未知来源应用」时，进入设置 → 允许来自此来源，返回后继续安装。</p>
+            </div>
+          </li>
+          <li>
+            <span class="il-no">3</span>
+            <div>
+              <h3>安装并打开</h3>
+              <p>点击安装，完成后打开应用，按引导开启无线调试（或直接使用录屏方案）即可开始导出。</p>
+            </div>
+          </li>
+        </ol>
+        <aside class="card tip-card reveal" data-reveal>
+          <h3>下载前确认</h3>
+          <ul>
+            <li>系统版本：<b>Android 11 及以上</b></li>
+            <li>文件大小：<b data-apk-size>约 94 MB</b>，建议 Wi-Fi 下载</li>
+            <li>安装来源：本站直链，下载后可直接校验文件大小</li>
+            <li>所有聊天数据在设备本地处理，不会上传</li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= FAQ ========================= -->
+  <section class="section" id="faq">
+    <div class="container narrow">
+      <div class="sec-head reveal" data-reveal>
+        <p class="eyebrow">常见问题</p>
+        <h2>你可能想知道的</h2>
+      </div>
+      <div class="faq">
+        <details class="reveal" data-reveal>
+          <summary>无线调试怎么开？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>打开手机「设置 → 关于手机」，连续点击「版本号」7 次开启开发者选项；回到「设置 → 系统 → 开发者选项」，打开「无线调试」。之后可以在无线调试页面看到配对码与端口。</p>
+            <p>部分品牌路径略有差异：小米在「设置 → 更多设置 → 开发者选项」，OPPO/一加在「设置 → 系统设置 → 开发者选项」，vivo 在「设置 → 系统管理 → 开发者选项」。</p>
+          </div>
+        </details>
+        <details class="reveal" data-reveal>
+          <summary>截图自动配对怎么用？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>开启无线调试后，App 会引导你输入配对码完成一次配对。配对成功后，后续使用同一 Wi-Fi 时会自动连接，无需重复输入。</p>
+            <p>如果连接失败，请确认手机与电脑处于同一局域网、无线调试保持开启，并在开发者选项中允许 USB 调试相关权限。部分系统开启「无线调试」后需要保持设置页面在前台，第一次配对完成后即可退出。</p>
+          </div>
+        </details>
+        <details class="reveal" data-reveal>
+          <summary>录屏方案怎么用？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>先用系统自带录屏，把要导出的聊天从开头慢慢滑到结尾，建议每一屏稍作停留、滚动速度均匀。录屏结束后打开 App，导入这段录屏，App 会自动抽帧、按滚动位移拼接，并切分成单页截图。</p>
+            <p>录屏时请关闭通知横幅与悬浮球，避免遮挡聊天内容影响拼接。</p>
+          </div>
+        </details>
+        <details class="reveal" data-reveal>
+          <summary>需要 Android 11+ 吗？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>是的。无线 ADB 配对能力需要 Android 11 及以上系统（开发者选项中的「无线调试」），所以 App 的最低系统要求为 Android 11。录屏方案同样运行在 Android 11+。</p>
+          </div>
+        </details>
+        <details class="reveal" data-reveal>
+          <summary>聊天内容会被上传吗？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>不会。截图、录屏导入、拼接去重全部在手机本地完成，应用不会上传聊天图片或内容。App 只在启动时访问官网检查版本更新。</p>
+          </div>
+        </details>
+        <details class="reveal" data-reveal>
+          <summary>安装时提示「未安装应用」或解析失败怎么办？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>通常是下载不完整导致。请通过 Wi-Fi 重新下载，下载完成后核对文件大小是否与页面显示一致；也可能是手机已有更高版本的同包名应用，卸载旧版后再安装。</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= 结尾 CTA ========================= -->
+  <section class="section final-cta">
+    <div class="container narrow center reveal" data-reveal>
+      <h2>一页看完一段对话</h2>
+      <p>下载聊天截图导出，把散落的截图整理成完整长图。</p>
+      <a class="btn btn-primary btn-lg" data-download href="wechat-shots-1.1.0.apk">下载 APK · <span data-version-name>v1.1.0</span></a>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <span class="brand-mark small" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="20" height="20"><path fill="currentColor" d="M16 2.8C8.7 2.8 2.8 8.1 2.8 14.7c0 3.7 1.9 7 4.9 9.2l-.9 4.6c-.1.6.5 1 .9.7l5.2-3c1 .2 2 .3 3.1.3 7.3 0 13.2-5.3 13.2-11.8S23.3 2.8 16 2.8Z"/></svg>
+      </span>
+      <span>聊天截图导出</span>
+    </div>
+    <p class="footer-note">Android 11+ · 本地处理 · 无需 root</p>
+    <p class="footer-copy">© <span id="year">2026</span> 聊天截图导出 · <a href="version.json">version.json</a></p>
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
