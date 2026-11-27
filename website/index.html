@@ -40,6 +40,7 @@
     <nav class="nav-links" aria-label="页面导航">
       <a href="#solutions">两种方案</a>
       <a href="#features">功能亮点</a>
+      <a href="#windows">Windows 版</a>
       <a href="#install">安装</a>
       <a href="#faq">常见问题</a>
     </nav>
@@ -297,6 +298,28 @@
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ========================= Windows 版 ========================= -->
+  <section class="section section-alt" id="windows">
+    <div class="container reveal" data-reveal>
+      <p class="eyebrow">Windows 电脑版</p>
+      <h2>在电脑上导出：笔录工具箱</h2>
+      <p class="sec-desc">同样的聊天记录导出能力，桌面端叫「笔录工具箱」。手机连电脑后用 USB 调试（也可以先 USB 再切无线）自动滚屏截图，或者直接导入手机录屏转截图。全程本地处理、不上传，低配电脑也能跑（Python + WebView2，没有 Electron 那种内存开销）。</p>
+      <ul class="hero-points" style="justify-content:center;margin:18px 0 26px">
+        <li>USB 调试 / 无线 ADB 自动滚屏截图，约 10%～25% 重叠，自动去重分页</li>
+        <li>导入录屏自动抽帧、重建长图、切页导出 + ZIP</li>
+        <li>内置 adb 与 iOS 风格界面，解压即用，无需安装 Python</li>
+      </ul>
+      <div class="dl-buttons" style="justify-content:center">
+        <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.0-win64.zip">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          下载 Windows 版（约 22 MB）
+        </a>
+        <a class="btn btn-ghost btn-lg" href="https://github.com/yueqiwu/wechat-shots/tree/main/record-toolbox">源码与说明</a>
+      </div>
+      <p class="hero-sub" style="text-align:center;margin-top:14px">Windows 10 / 11 · 解压后双击「笔录工具箱.exe」即可运行，首次使用按界面引导开启 USB 调试</p>
     </div>
   </section>
 
