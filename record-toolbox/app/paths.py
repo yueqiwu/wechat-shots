@@ -6,7 +6,7 @@ import sys
 
 APP_NAME = "笔录工具箱"
 APP_ID = "RecordToolbox"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 
 def is_frozen() -> bool:

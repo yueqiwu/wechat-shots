@@ -793,9 +793,10 @@ export function mount(root, ctx) {
     refreshPreview(false);
   }
 
+  /* 刷新预览：设备可能已断开或换成另一台，失败时自动刷新设备并重试一次。 */
   async function refreshPreview(showToast = false) {
     if (previewLoading) return;
-    const device = getActiveDevice();
+    let device = getActiveDevice();
     if (!device) {
       if (showToast) toast('请先连接手机', 'error');
       return;
@@ -804,18 +805,38 @@ export function mount(root, ctx) {
     previewTried = true;
     previewError = '';
     if (busy === null && !result) render();
+    let lastError = '';
     try {
-      const response = await api('screencap', {
-        serial: device.serial,
-        sid: previewSid || undefined,
-        kind: 'adb',
-      }, { silent: !showToast });
-      previewSid = response.sid;
-      if (!sid) sid = response.sid;
-      previewShot = response.shot;
-      if (showToast) toast('已刷新预览', 'success', { timeout: 1500 });
-    } catch (error) {
-      previewError = error.message || '读取手机画面失败';
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const response = await api('screencap', {
+            serial: device.serial,
+            sid: previewSid || undefined,
+            kind: 'adb',
+          }, { silent: !showToast && attempt === 0 });
+          if (response.serial && response.serial !== device.serial) {
+            ctx.setActiveSerial(response.serial);
+          }
+          previewSid = response.sid;
+          if (!sid) sid = response.sid;
+          previewShot = response.shot;
+          previewError = '';
+          if (showToast) toast('已刷新预览', 'success', { timeout: 1500 });
+          return;
+        } catch (error) {
+          lastError = error.message || '读取手机画面失败';
+          if (attempt === 0) {
+            await refreshDevices(false);
+            const fresh = getActiveDevice();
+            if (fresh && fresh.serial !== device.serial) {
+              device = fresh;
+              continue;
+            }
+          }
+          break;
+        }
+      }
+      previewError = lastError;
       previewShot = null;
       if (showToast) toast(previewError, 'error');
     } finally {
@@ -871,12 +892,19 @@ export function mount(root, ctx) {
         }
         return;
       }
-      const serial = device.serial;
+      let serial = device.serial;
       try { await api('wake', { serial }, { silent: true }); } catch (error) { /* 忽略 */ }
+      const adoptSerial = (response) => {
+        if (response && response.serial && response.serial !== serial) {
+          serial = response.serial;
+          ctx.setActiveSerial(serial);
+        }
+      };
       let dims = null;
       try {
         const infoResponse = await api('info', { serial }, { silent: true });
         dims = infoResponse && infoResponse.info;
+        adoptSerial(infoResponse);
       } catch (error) { dims = null; }
       const width = (dims && dims.width) || (previewShot && previewShot.width) || 1080;
       const height = (dims && dims.height) || (previewShot && previewShot.height) || 2400;
@@ -896,6 +924,7 @@ export function mount(root, ctx) {
 
       const first = await api('screencap', { serial, sid: sid || undefined, kind: 'adb' });
       if (cancelled) return;
+      adoptSerial(first);
       sid = first.sid;
       previewSid = first.sid;
       shots.push(first.shot);
@@ -931,6 +960,7 @@ export function mount(root, ctx) {
           if (stopRequested || cancelled) break;
           const response = await api('screencap', { serial, sid, kind: 'adb' }, { silent: true });
           if (cancelled) break;
+          adoptSerial(response);
           shot = response.shot;
           signature = await frameSignature(sid, shot);
           if (cancelled) break;

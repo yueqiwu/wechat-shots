@@ -1485,6 +1485,17 @@ html[data-theme="dark"] .device-connected-text { color: #4cd964; }
 }
 .result-saved svg { flex: none; color: var(--blue); }
 .result-saved-path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 11.5px; }
+.result-quality-note {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: rgba(255, 149, 0, 0.1);
+  color: #a35f00;
+  font-size: 12px;
+  line-height: 1.6;
+}
+[data-theme='dark'] .result-quality-note { color: #ffb340; background: rgba(255, 149, 0, 0.14); }
+html[data-theme='dark'] .result-quality-note { color: #ffb340; background: rgba(255, 149, 0, 0.14); }
 .result-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 16px; }
 .result-secondary { display: flex; align-items: center; gap: 9px; margin-left: auto; }
 .result-hint { margin-top: 12px; font-size: 11.5px; color: var(--text-3); }

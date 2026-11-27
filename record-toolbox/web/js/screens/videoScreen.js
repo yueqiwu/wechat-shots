@@ -357,15 +357,32 @@ export function mount(root, ctx) {
       const plan = engine.stitch.planMaster(analysis, crop.topPx, crop.botPx, tileH);
       const planStats = (plan && plan.stats) || {};
       const planOverlap = Number.isFinite(planStats.medianOverlapRatio) ? planStats.medianOverlapRatio : null;
+      const analysisStats = (analysis && analysis.stats) || {};
+      const skippedFrames = Number(analysisStats.skippedFrames) || 0;
+      const imputedSteps = Number(analysisStats.imputedSteps) || 0;
       const collected = [];
+      const renderDebug = { calls: 0, ok: 0, nullUrl: 0, skippedDisposed: 0, errors: [] };
       await engine.video.renderVideoPages(
         plan,
         provider,
         { cropTopPx: crop.topPx, cropBotPx: crop.botPx, tileH },
         (...args) => {
-          if (disposed || run !== busyRun) return;
-          const dataUrl = pageToDataUrl(...args);
-          if (!dataUrl) return;
+          renderDebug.calls++;
+          if (disposed || run !== busyRun) {
+            renderDebug.skippedDisposed++;
+            return;
+          }
+          let dataUrl = null;
+          try {
+            dataUrl = pageToDataUrl(...args);
+          } catch (err) {
+            if (renderDebug.errors.length < 5) renderDebug.errors.push(String((err && err.message) || err));
+          }
+          if (!dataUrl) {
+            renderDebug.nullUrl++;
+            return;
+          }
+          renderDebug.ok++;
           collected.push(dataUrl);
           pages = collected.map((src, index) => ({ src, label: '第 ' + (index + 1) + ' 页' }));
           if (refs.pageCount) refs.pageCount.textContent = '已生成 ' + collected.length + ' 页';
@@ -384,6 +401,8 @@ export function mount(root, ctx) {
         duration: (info && info.duration) || 0,
         resolution: info && info.width ? info.width + '×' + info.height : '',
         overlap: planOverlap,
+        skippedFrames,
+        imputedSteps,
         elapsed: Date.now() - startedAt,
         saved: null,
       };
@@ -684,6 +703,11 @@ export function mount(root, ctx) {
       ui.statTile({ label: '录屏时长', value: result.duration ? formatDuration(result.duration) : '—' }),
       ui.statTile({ label: '分辨率', value: result.resolution || '—' }),
       ui.statTile({ label: '耗时', value: result.elapsed ? ui.formatMs(result.elapsed) : '—' }));
+    const qualityNote = (Number(result.skippedFrames) > 0 || Number(result.imputedSteps) > 0)
+      ? h('div', { class: 'result-quality-note' },
+        '录屏里有 ' + (Number(result.skippedFrames) + Number(result.imputedSteps))
+        + ' 帧因为滑动太快没能完整对齐，已自动跳过或就近补齐；个别位置可能有轻微重复/缺失。下次录制时慢一点、匀速滑动效果更好。')
+      : null;
     const savedRow = saved
       ? h('div', { class: 'result-saved' },
         icon('checkCircle', 16),
@@ -694,9 +718,8 @@ export function mount(root, ctx) {
         h('div', { class: 'result-icon' }, icon('checkCircle', 22)),
         h('div', { class: 'result-text' },
           h('div', { class: 'result-title' }, '分析完成'),
-          h('div', { class: 'result-sub' }, '共生成 ' + pageCount + ' 页截图'
-            + (Number.isFinite(result.overlap) ? '，实测重叠约 ' + Math.round(result.overlap * 100) + '%' : '')
-            + '，可以保存到电脑或直接打开查看。'))),
+          h('div', { class: 'result-sub' }, '共生成 ' + pageCount + ' 页截图，相邻页面内容连续、已自动去重，可以保存到电脑或直接打开查看。'))),
+      qualityNote,
       stats,
       savedRow,
       h('div', { class: 'result-actions' }, saveButton, h('div', { class: 'result-secondary' }, openButton, againButton)));

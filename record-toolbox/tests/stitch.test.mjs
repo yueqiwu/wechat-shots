@@ -561,3 +561,183 @@ test('全局单调性：validateGlobalMonotonic 直接拦截 ops 帧序折返与
     /无法稳定对齐/,
   );
 });
+
+// ---------------------------------------------------------------------------
+// 真人录屏的实际形态：朝「更早消息」滚（内容向下移动）、中间回滑
+// ---------------------------------------------------------------------------
+
+test('normalizeVideoTimeline：内容向下滚（pos 递减）自动反转时间轴并变正', () => {
+  // 用户录屏常见：从最新消息开始，往更早的消息滚，画面内容整体向下移动。
+  const analysis = makeTrackAnalysis({
+    stripH: 432 + 160,
+    offsets: [432, 288, 144, 0],
+    pos: [432, 288, 144, 0],
+    ncc: [0, 0.99, 0.99, 0.99],
+    kind: 'video',
+  });
+  const norm = S.normalizeVideoTimeline(analysis.frames, analysis.track);
+  assert.equal(norm.reversed, true);
+  assert.deepEqual(Array.from(norm.track.pos), [0, 144, 288, 432]);
+  assert.ok(norm.track.step[1] > 0 && norm.track.step[3] > 0);
+  // 帧序列物理倒序（渲染按 timeUs 取帧，顺序不影响画面）
+  for (let i = 0; i < norm.frames.length; i++) {
+    assert.equal(norm.frames[i].timeUs, analysis.frames[analysis.frames.length - 1 - i].timeUs);
+  }
+  const reversed = { ...analysis, frames: norm.frames, track: norm.track };
+  const plan = S.planMaster(reversed, 0, 160, 200);
+  assert.equal(plan.masterH, 160 + 432);
+  assert.ok(plan.pageCount >= 2);
+});
+
+test('trimMonotoneTimeline：中间回滑的一段被裁掉，剩下的仍能拼接', () => {
+  const pos = [];
+  for (let i = 0; i <= 9; i++) pos.push(i * 100); // 0..900 正常
+  pos.push(400); // 第 10 帧回滑（step -500）
+  for (let i = 11; i <= 20; i++) pos.push(400 + (i - 10) * 100); // 继续正常
+  const analysis = makeTrackAnalysis({
+    stripH: 1700 + 160,
+    offsets: pos.map((p) => Math.max(0, 900 - p)), // 随便给，签名有效即可
+    pos,
+    ncc: pos.map(() => 0.99),
+    kind: 'video',
+  });
+  const trimmed = S.trimMonotoneTimeline(analysis.frames, analysis.track, 160);
+  assert.ok(trimmed.dropped > 0, '应裁掉不连续片段');
+  assert.equal(trimmed.frames.length + trimmed.dropped, analysis.frames.length);
+  for (let i = 2; i < trimmed.track.step.length; i++) {
+    assert.ok(trimmed.track.step[i] > 0, '裁剪后位移应全为正');
+  }
+  const plan = S.planMaster(
+    { ...analysis, frames: trimmed.frames, track: trimmed.track },
+    0,
+    160,
+    200,
+  );
+  assert.ok(plan.masterH > 160);
+});
+
+test('repairVideoTrack：少量失配用邻近步长补齐后仍可出图', () => {
+  const pos = [0, 40, 80, 120, -20, 40, 80, 120, 160, 200];
+  const analysis = makeTrackAnalysis({
+    stripH: 1700 + 160,
+    offsets: [0, 200, 400, 600, 800, 900, 960, 1020, 1080, 1140],
+    pos,
+    ncc: pos.map((_, i) => (i === 4 || i === 5 ? 0.42 : 0.99)),
+    kind: 'video',
+  });
+  const rep = S.repairVideoTrack(analysis.frames, analysis.track, 160, { stationaryRatio: 0.06 });
+  assert.ok(rep.imputed >= 1, '应修复失配步长');
+  assert.ok(rep.usableRatio < 1);
+  assert.equal(rep.track.bad.length, 0, '补齐后不应再有失配');
+  for (let i = 1; i < rep.track.pos.length; i++) {
+    assert.ok(rep.track.pos[i] > rep.track.pos[i - 1], '补齐后主图坐标应严格递增');
+  }
+  const plan = S.planMaster({ ...analysis, frames: rep.frames, track: rep.track }, 0, 160, 200);
+  assert.ok(plan.masterH > 160);
+  assert.ok(plan.pageCount >= 1);
+});
+
+test('trackAgainstMaster：逐帧以主图为参照对齐，恢复真实位移且不产生累计漂移', () => {
+  const viewH = 160;
+  const step = 46;
+  const count = 40;
+  const strip = synthStrip(viewH + step * (count - 1) + 8);
+  const frames = [];
+  for (let k = 0; k < count; k++) {
+    const off = k * step;
+    const gray = strip.slice(off * W, (off + viewH) * W);
+    frames.push({ timeUs: k * 100000, sig: S.rowSig(gray, W, viewH, S.BINS), sharp: 1 });
+  }
+  const res = S.trackAgainstMaster(frames, viewH, S.BINS, { minOverlap: 0.25 });
+  assert.ok(res, '应返回对齐结果');
+  assert.equal(res.skipped, 0, '理想匀速滚动不应跳帧');
+  assert.equal(res.frames.length, count);
+  for (let i = 0; i < count; i++) {
+    assert.equal(Math.round(res.track.pos[i]), i * step, `第 ${i} 帧位置应等于真实位移`);
+  }
+  for (let i = 1; i < count; i++) {
+    assert.equal(Math.round(res.track.step[i]), step);
+  }
+});
+
+test('analyze+planMaster：朝更早消息滚动的录屏（内容向下）也能出图', async () => {
+  const viewH = 160;
+  const frameCount = 30;
+  const speed = 40; // 每帧向下移动 40 行 => 75% 重叠
+  const startOff = (frameCount - 1) * speed;
+  const strip = synthStrip(startOff + viewH);
+  const durationSec = frameCount / 10; // fps=10
+  const provider = {
+    kind: 'video',
+    frameCount,
+    duration: durationSec,
+    async sample(items) {
+      return items.map((tSec) => {
+        const off = Math.max(0, Math.min(startOff, Math.round(startOff - tSec * speed * 10)));
+        return { timeUs: Math.round(tSec * 1e6), gray: strip.slice(off * W, (off + viewH) * W), width: W, height: viewH };
+      });
+    },
+    frameWidth: () => W,
+    frameHeight: () => viewH,
+  };
+  const analysis = await S.analyze(provider, { fps: 10, refineRounds: 0, analysisWidth: W });
+  assert.equal(analysis.kind, 'video');
+  assert.equal(analysis.stats.directionReversed, 1, '内容向下滚动应标记为方向反转');
+  const plan = S.planMaster(analysis, 0, viewH, viewH);
+  assert.ok(plan.pageCount >= 2);
+  assert.ok(plan.masterH >= viewH + (frameCount - 2) * speed * 0.9);
+});
+
+// ---------------------------------------------------------------- trackBySpeed（真实帧序列 + dt 先验）
+function makeSigFrame(offset, bandH) {
+  const sig = new Uint8Array(bandH * 8);
+  for (let y = 0; y < bandH; y++) {
+    const base = (offset + y) * 97 % 256;
+    for (let b = 0; b < 8; b++) sig[y * 8 + b] = (base + b * 13) % 256;
+  }
+  return sig;
+}
+function makeMovingFrames({ count, bandH, gapsSec, speed, startOffset, direction }) {
+  // direction=+1：帧顶对应的主图行号递增（画面内容向上滚）；-1：行号递减（内容向下滚）
+  const frames = [];
+  let t = 0;
+  const at = (sec) => Math.round(startOffset + direction * speed * sec);
+  frames.push({ timeUs: 0, sig: makeSigFrame(at(0), bandH), sharp: 1 });
+  for (let i = 1; i < count; i++) {
+    const dt = gapsSec[i % gapsSec.length];
+    t += dt;
+    frames.push({ timeUs: Math.round(t * 1e6), sig: makeSigFrame(at(t), bandH), sharp: 1 });
+  }
+  return frames;
+}
+test('trackBySpeed：内容向下滚动（录屏滚向更早消息）时反转时间轴并恢复位移', () => {
+  const bandH = 120;
+  const gaps = [0.1, 0.1667, 0.1333, 0.2, 0.0667];
+  const speed = 320;
+  const frames = makeMovingFrames({ count: 36, bandH, gapsSec: gaps, speed, startOffset: 900, direction: -1 });
+  const traced = S.trackBySpeed(frames, bandH, 8, { costLimit: 1e9 });
+  assert.equal(traced.directionReversed, true);
+  assert.equal(traced.frames.length, frames.length);
+  for (let j = 1; j < traced.steps.length; j++) {
+    const origIndex = traced.steps.length - j;
+    const dt = gaps[origIndex % gaps.length];
+    const expected = speed * dt;
+    assert.ok(Math.abs(traced.steps[j] - expected) <= 4, 'step ' + j + ' ' + traced.steps[j] + ' vs ' + expected);
+  }
+  for (let i = 1; i < traced.track.pos.length; i++) {
+    assert.ok(traced.track.pos[i] > traced.track.pos[i - 1]);
+  }
+});
+test('trackBySpeed：内容向上滚动时无需反转，位移正确', () => {
+  const bandH = 120;
+  const gaps = [0.1333, 0.1, 0.1667];
+  const speed = 260;
+  const frames = makeMovingFrames({ count: 24, bandH, gapsSec: gaps, speed, startOffset: 200, direction: 1 });
+  const traced = S.trackBySpeed(frames, bandH, 8, { costLimit: 1e9 });
+  assert.equal(traced.directionReversed, false);
+  for (let j = 1; j < traced.steps.length; j++) {
+    const dt = gaps[j % gaps.length];
+    const expected = speed * dt;
+    assert.ok(Math.abs(traced.steps[j] - expected) <= 4, 'step ' + j + ' ' + traced.steps[j] + ' vs ' + expected);
+  }
+});

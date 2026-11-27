@@ -4,7 +4,7 @@
 
 用法:
   python tools/upload_toolbox.py
-  python tools/upload_toolbox.py --zip record-toolbox/dist/record-toolbox-1.0.0-win64.zip
+  python tools/upload_toolbox.py --zip record-toolbox/dist/record-toolbox-1.0.1-win64.zip
 """
 
 import argparse
@@ -19,8 +19,8 @@ import release_bt as bt  # noqa: E402
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--zip", default=os.path.join("record-toolbox", "dist", "record-toolbox-1.0.0-win64.zip"))
-    ap.add_argument("--name", default="record-toolbox-1.0.0-win64.zip")
+    ap.add_argument("--zip", default=os.path.join("record-toolbox", "dist", "record-toolbox-1.0.1-win64.zip"))
+    ap.add_argument("--name", default="record-toolbox-1.0.1-win64.zip")
     ap.add_argument("--skip-upload", action="store_true")
     args = ap.parse_args()
 

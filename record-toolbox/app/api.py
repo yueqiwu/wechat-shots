@@ -311,13 +311,20 @@ def save_export(payload: dict, as_zip: bool) -> dict:
 
 
 def adb_action(action: str, payload: dict) -> dict:
-    serial = payload.get("serial") or None
     adb_path = (settings.load().get("adb_path") or "").strip() or None
-    client = adb_module.Adb(adb_path=adb_path, serial=serial)
     if action == "devices":
         return adb_module.list_devices(adb_path)
+    # 除无线连接/配对/发现之外，设备操作都先校验 serial 是否仍在线，
+    # 只有一个在线设备时自动改用真实 serial（避免保存过失效 serial 后全部报错）。
+    if action in ("connect", "disconnect", "pair", "mdns"):
+        serial = payload.get("serial") or None
+    else:
+        serial = adb_module.Adb(adb_path=adb_path).resolve_online(payload.get("serial"))
+    client = adb_module.Adb(adb_path=adb_path, serial=serial)
     if action == "info":
-        return {"ok": True, "info": client.device_info()}
+        info = client.device_info()
+        info["serial"] = serial
+        return {"ok": True, "info": info, "serial": serial}
     if action == "screencap":
         kind = payload.get("kind") or "adb"
         session = get_session(payload.get("sid") or "", create=True, kind=kind)
@@ -336,7 +343,12 @@ def adb_action(action: str, payload: dict) -> dict:
             "elapsedMs": int((time.time() - started) * 1000),
         }
         session.shots.append(shot)
-        return {"ok": True, "sid": session.sid, "shot": {k: shot[k] for k in ("id", "width", "height", "elapsedMs")}}
+        return {
+            "ok": True,
+            "sid": session.sid,
+            "serial": serial,
+            "shot": {k: shot[k] for k in ("id", "width", "height", "elapsedMs")},
+        }
     if action == "swipe":
         client.swipe(
             int(payload["x1"]), int(payload["y1"]), int(payload["x2"]), int(payload["y2"]),

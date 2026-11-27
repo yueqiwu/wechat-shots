@@ -406,7 +406,16 @@ export function trackOffsets(frames, height, options = {}) {
   const ncc = new Float64Array(n).fill(-1);
   const agree = new Float64Array(n).fill(Infinity);
   const win = Math.max(20, Math.round(h * 0.3));
+  // 视频专用：单帧位移超过「单步上限」的匹配视为不可信。
+  // 原因：真实录屏里聊天区上下常有整片纯色背景，位移接近整屏时重叠区只剩十几行纯背景，
+  // 任何错位都能算出 ncc≈0.97 的假匹配（实测 131s 录屏里 100+ 个 ±(maxShift-2) 假位移）。
+  // 这类匹配先标记出来，交给加密补帧把单步位移降下去，再重新跟踪。
+  const maxStepRatio = opts.maxStepRatio == null ? 1.0 : Number(opts.maxStepRatio);
+  const maxStep = Math.max(8, maxStepRatio * h);
   let center = 0;
+  // 第一遍：只让「可信匹配」更新下一帧的搜索中心。
+  // 之前每一帧都用上一帧结果当中心，一次错配（比如假的大位移）会把后续几十帧都带偏。
+  const plausible = new Uint8Array(n);
   for (let i = 1; i < n; i++) {
     const a = frames[i - 1].sig;
     const b = frames[i].sig;
@@ -417,26 +426,381 @@ export function trackOffsets(frames, height, options = {}) {
     agree[i] = Math.abs(fwd.shift + bwd.shift);
     const st = -fwd.shift;
     step[i] = st === 0 ? 0 : st; // 归一化 -0（截图完全静止时）
-    pos[i] = pos[i - 1] + step[i];
-    center = -step[i];
+    const ok =
+      Number.isFinite(fwd.cost) &&
+      Math.abs(st) < maxShift - 1 &&
+      Math.abs(st) <= maxStep &&
+      ncc[i] >= opts.minNcc &&
+      agree[i] <= tol;
+    plausible[i] = ok ? 1 : 0;
+    if (ok) center = -st;
   }
+  for (let i = 1; i < n; i++) pos[i] = pos[i - 1] + step[i];
   const cs = [];
   for (let i = 1; i < n; i++) if (Number.isFinite(step[i]) && Number.isFinite(cost[i])) cs.push(cost[i]);
   const med = median(cs);
+  // 主方向：录屏可能朝任一方向滚，用可信匹配的中位符号判断。
+  const plausibleSteps = [];
+  for (let i = 1; i < n; i++) if (plausible[i]) plausibleSteps.push(step[i]);
+  const dirSign = Math.sign(median(plausibleSteps) || 0);
+  const stationaryEps = Math.max(2, h * 0.02);
   const bad = [];
   for (let i = 1; i < n; i++) {
     const score = 1 - ncc[i];
     const c = cost[i];
-    if (!Number.isFinite(c) || Math.abs(step[i]) >= maxShift - 1) {
+    const s = step[i];
+    if (!Number.isFinite(c) || Math.abs(s) >= maxShift - 1) {
       bad.push({ i, reason: 'jump', ncc: ncc[i], cost: c, agree: agree[i], score: 2 + score });
+    } else if (Math.abs(s) > maxStep) {
+      bad.push({ i, reason: 'far', ncc: ncc[i], cost: c, agree: agree[i], score: 1 + score });
     } else if (ncc[i] < opts.minNcc) {
       bad.push({ i, reason: 'nocc', ncc: ncc[i], cost: c, agree: agree[i], score });
     } else if (agree[i] > tol) {
       bad.push({ i, reason: 'match', ncc: ncc[i], cost: c, agree: agree[i], score });
+    } else if (dirSign !== 0 && Math.sign(s) === -dirSign && Math.abs(s) > stationaryEps) {
+      // 反方向的可信匹配：多半是界面里有重复图案导致的假位移，同样交给补帧处理。
+      bad.push({ i, reason: 'flip', ncc: ncc[i], cost: c, agree: agree[i], score: 1.5 + score });
     }
   }
   for (let i = 1; i < n; i++) if (!Number.isFinite(pos[i])) pos[i] = pos[i - 1];
   return { pos, step, ncc, cost, agree, bad, maxShift, tol, medCost: med };
+}
+
+/** 录屏方向不连续（来回滚动/频繁甩动）时的错误文案。 */
+const TIMELINE_MSG =
+  '录屏里的滚动方向不连续（有来回滑动或快速甩动），没法拼成一张完整长图。请重新录制：' +
+  '只朝一个方向平稳滑动聊天列表，中间不要回滑，相邻画面保留约 10%～25% 重叠。';
+
+/**
+ * 视频「静止帧」判定比例：手机录屏压缩/手抖会让同一内容的相邻帧匹配出几行抖动，
+ * 1% 屏高太严（实测真人录屏里 2%~6% 的抖动很常见），放宽到 6% 屏高；
+ * 静态截图仍用 1%（截图一屏一张，不存在视频那种帧间噪声）。
+ */
+const VIDEO_STATIONARY_RATIO = 0.06;
+
+/**
+ * 时间轴方向归一：真人录屏常是「朝更早的消息滚」（内容向下移动），
+ * 此时 trackOffsets 的 pos 会一直递减，虽然内容本身连续可拼，但
+ * checkGlobalMonotonic 要求 pos 递增。这里把帧序列整体倒过来，
+ * 位移符号随之变正；渲染仍按 timeUs 取帧，所以画面内容不受影响。
+ * -> {frames, track, reversed}
+ */
+export function normalizeVideoTimeline(sigFrames, track) {
+  const n = sigFrames ? sigFrames.length : 0;
+  if (!track || !track.pos || n < 2) return { frames: sigFrames, track, reversed: false };
+  const pos = track.pos;
+  const net = Number(pos[n - 1]) - Number(pos[0]);
+  if (!(net < 0)) return { frames: sigFrames, track, reversed: false };
+
+  const frames = new Array(n);
+  const newPos = new Array(n);
+  for (let j = 0; j < n; j++) {
+    frames[j] = sigFrames[n - 1 - j];
+    newPos[j] = Number(pos[n - 1 - j]);
+  }
+  const base = newPos[0];
+  for (let j = 0; j < n; j++) newPos[j] -= base;
+  const step = new Array(n).fill(0);
+  for (let j = 1; j < n; j++) step[j] = newPos[j] - newPos[j - 1];
+  const ncc = new Array(n);
+  const agree = new Array(n);
+  const cost = new Array(n);
+  for (let j = 0; j < n; j++) {
+    const i = n - 1 - j;
+    ncc[j] = track.ncc && Number.isFinite(track.ncc[i]) ? track.ncc[i] : 1;
+    agree[j] = track.agree && Number.isFinite(track.agree[i]) ? track.agree[i] : 0;
+    cost[j] = track.cost && Number.isFinite(track.cost[i]) ? track.cost[i] : track.medCost;
+  }
+  const bad = [];
+  if (Array.isArray(track.bad)) {
+    for (const b of track.bad) {
+      const i = n - 1 - (b.i | 0);
+      if (i > 0 && i < n) bad.push({ ...b, i });
+    }
+  }
+  return {
+    frames,
+    track: { ...track, pos: newPos, step, ncc, agree, cost, bad },
+    reversed: true,
+  };
+}
+
+/**
+ * 只保留「最长一段连续可用位移」。可用 = 正向步长落在 (0, 0.98*bandH]，
+ * 或静止/重复帧（|step|<=1% bandH 且 ncc>=0.92）。
+ * 录屏里如果在中间回滑了一段，裁掉前后不连续的部分，剩下大部分仍能出图。
+ * -> {frames, track, dropped, start, end}；整段都可用时 dropped=0。
+ * 可用段太短（<40% 且 <8 帧）抛 TIMELINE_MSG。
+ */
+export function trimMonotoneTimeline(sigFrames, track, bandH, options = {}) {
+  const n = sigFrames ? sigFrames.length : 0;
+  const h = Math.max(1, Math.round(bandH || 1));
+  const stationaryRatio = Number.isFinite(options.stationaryRatio)
+    ? Math.min(0.2, Math.max(0.005, options.stationaryRatio))
+    : 0.01;
+  const whole = { frames: sigFrames, track, dropped: 0, start: 0, end: n - 1 };
+  if (!track || !track.pos || n < 3) return whole;
+  const pos = track.pos;
+  const ncc = track.ncc;
+  const maxStep = 0.98 * h;
+  const stationaryEps = Math.max(1.5, stationaryRatio * h);
+  const ok = new Array(n).fill(false);
+  ok[0] = true;
+  for (let i = 1; i < n; i++) {
+    const s = Number(pos[i]) - Number(pos[i - 1]);
+    const c = ncc && Number.isFinite(ncc[i]) ? ncc[i] : 1;
+    if (s > 0 && s <= maxStep) ok[i] = true;
+    else if (Math.abs(s) <= stationaryEps && c >= 0.92) ok[i] = true;
+  }
+  let bestStart = 0;
+  let bestLen = 1;
+  let start = 0;
+  for (let i = 1; i <= n; i++) {
+    if (i === n || !ok[i]) {
+      const len = i - start;
+      if (len > bestLen) {
+        bestLen = len;
+        bestStart = start;
+      }
+      start = i;
+    }
+  }
+  if (bestLen >= n) return whole;
+  const minKeep = Math.max(8, Math.ceil(0.4 * n));
+  if (bestLen < minKeep) throw new StitchError(TIMELINE_MSG);
+  const end = bestStart + bestLen - 1;
+  const frames = sigFrames.slice(bestStart, end + 1);
+  const base = Number(pos[bestStart]);
+  const newPos = new Array(bestLen);
+  for (let j = 0; j < bestLen; j++) newPos[j] = Number(pos[bestStart + j]) - base;
+  const step = new Array(bestLen).fill(0);
+  for (let j = 1; j < bestLen; j++) step[j] = newPos[j] - newPos[j - 1];
+  const newNcc = new Array(bestLen);
+  const newAgree = new Array(bestLen);
+  const newCost = new Array(bestLen);
+  for (let j = 0; j < bestLen; j++) {
+    const i = bestStart + j;
+    newNcc[j] = ncc && Number.isFinite(ncc[i]) ? ncc[i] : 1;
+    newAgree[j] = track.agree && Number.isFinite(track.agree[i]) ? track.agree[i] : 0;
+    newCost[j] = track.cost && Number.isFinite(track.cost[i]) ? track.cost[i] : track.medCost;
+  }
+  const bad = [];
+  if (Array.isArray(track.bad)) {
+    for (const b of track.bad) {
+      const i = (b.i | 0) - bestStart;
+      if (i > 0 && i < bestLen) bad.push({ ...b, i });
+    }
+  }
+  return {
+    frames,
+    track: { ...track, pos: newPos, step, ncc: newNcc, agree: newAgree, cost: newCost, bad },
+    dropped: n - bestLen,
+    start: bestStart,
+    end,
+  };
+}
+
+/**
+ * 以「已拼接主图」为参照逐帧校正位置（解决逐帧累计误差导致的整段错位/重复）。
+ * 对每一帧，只在主图末尾附近搜索最佳位移，按「行活跃度加权」比较签名，
+ * 匹配不上就跳过该帧（不推进主图），因此不会把错误位移永久累计下去。
+ * -> {frames, track, skipped, masterRows} 或 null
+ */
+export function trackAgainstMaster(sigFrames, height, bins = BINS, options = {}) {
+  const n = sigFrames ? sigFrames.length : 0;
+  const h = Math.max(2, height | 0);
+  const bn = Math.max(1, bins | 0);
+  if (n < 2) return null;
+  const minOverlapRatio = options.minOverlap == null ? 0.25 : Number(options.minOverlap);
+  const minOverlap = Math.max(8, Math.round(h * minOverlapRatio));
+  const maxStep = Math.max(1, h - minOverlap);
+  const acceptCost = options.acceptCost == null ? 4.2 : Number(options.acceptCost);
+  const winRatio = options.searchWinRatio == null ? 0.35 : Number(options.searchWinRatio);
+  const infoFloor = options.infoFloor == null ? 40 : Number(options.infoFloor);
+
+  // 每帧行活跃度（权重来源：文字/气泡行权重高，纯色空白行几乎不参与比对）
+  const acts = new Array(n);
+  for (let i = 0; i < n; i++) acts[i] = sigActivity(sigFrames[i].sig, h, bn);
+
+  const costOf = (f, p, lim) => {
+    const sig = sigFrames[f].sig;
+    const act = acts[f];
+    let sum = 0;
+    let wsum = 0;
+    for (let r = 0; r < lim; r++) {
+      const w = 0.15 + Math.min(1.2, act[r] / 22);
+      const fo = r * bn;
+      const mo = (p + r) * bn;
+      let d = 0;
+      for (let b = 0; b < bn; b++) d += Math.abs(sig[fo + b] - master[mo + b]);
+      sum += (w * d) / bn;
+      wsum += w;
+    }
+    return wsum > 0 ? sum / wsum : 0;
+  };
+
+  // 主图签名缓冲（动态扩容）
+  let cap = Math.max(h * 4, 4096);
+  let master = new Uint8Array(cap * bn);
+  const ensure = (rows) => {
+    if (rows <= cap) return;
+    while (cap < rows) cap *= 2;
+    const next = new Uint8Array(cap * bn);
+    next.set(master.subarray(0, masterH * bn));
+    master = next;
+  };
+  let masterH = 0;
+  master.set(sigFrames[0].sig.subarray(0, h * bn), 0);
+  masterH = h;
+
+  const positions = [0];
+  const nccs = [1];
+  const costs = [0];
+  const steps = [0];
+  const kept = [sigFrames[0]];
+  let skipped = 0;
+  let lastStep = Math.max(4, Math.round(h * 0.2));
+
+  for (let i = 1; i < n; i++) {
+    const center = clampInt(Math.round(lastStep), Math.max(1, Math.round(h * 0.05)), maxStep);
+    const win = Math.max(12, Math.round(h * winRatio));
+    let best = null;
+    const scan = (from, to, tieBreak) => {
+      let bs = -1;
+      let bc = Infinity;
+      let bcCost = Infinity;
+      for (let s = from; s <= to; s++) {
+        const overlap = h - s;
+        if (overlap < minOverlap) continue;
+        const p = masterH - overlap;
+        if (p < 0) continue;
+        const c = costOf(i, p, overlap);
+        const score = c + tieBreak * Math.abs(s - center);
+        if (score < bc) {
+          bc = score;
+          bcCost = c;
+          bs = s;
+        }
+      }
+      return bs >= 0 ? { step: bs, cost: bcCost } : null;
+    };
+    best = scan(Math.max(1, center - win), Math.min(maxStep, center + win), 0.004);
+    if (!best || best.cost > acceptCost) {
+      const wide = scan(1, maxStep, 0.002);
+      if (wide && wide.cost <= acceptCost * 1.6 && (!best || wide.cost < best.cost)) best = wide;
+    }
+    if (!best || best.cost > acceptCost * 2.2) {
+      skipped += 1;
+      continue;
+    }
+    // 重叠区信息量太少（几乎纯色）时，宁可沿用上一帧位移，避免被无信息的区域误导
+    const overlap = h - best.step;
+    const p = masterH - overlap;
+    let info = 0;
+    for (let r = 0; r < overlap; r++) info += acts[i][r];
+    if (info < infoFloor && Math.abs(best.step - center) > Math.max(4, win / 2)) {
+      best = { step: center, cost: Math.min(best.cost, acceptCost) };
+    }
+    const step = clampInt(best.step, 1, maxStep);
+    const ov = h - step;
+    const fp = masterH - ov;
+    if (fp < 0) {
+      skipped += 1;
+      continue;
+    }
+    // 新内容追加到主图尾部
+    ensure(masterH + step + h);
+    const srcRow = h - step;
+    for (let r = 0; r < step; r++) {
+      const fo = (srcRow + r) * bn;
+      const mo = (masterH + r) * bn;
+      for (let b = 0; b < bn; b++) master[mo + b] = sigFrames[i].sig[fo + b];
+    }
+    masterH += step;
+    positions.push(fp);
+    nccs.push(Math.min(1, Math.max(0, 1 - best.cost / 20)));
+    costs.push(best.cost);
+    steps.push(step);
+    kept.push(sigFrames[i]);
+    lastStep = step;
+  }
+  if (kept.length < 3) return null;
+  const pos = Float64Array.from(positions);
+  const track = {
+    pos,
+    step: Float64Array.from(steps),
+    ncc: Float64Array.from(nccs),
+    agree: new Float64Array(kept.length),
+    cost: Float64Array.from(costs),
+    bad: [],
+    maxShift: Math.round(h * 0.95),
+    tol: Math.max(2, 0.02 * h),
+    medCost: costs.slice().sort((a, b) => a - b)[Math.floor(costs.length / 2)] || 0,
+  };
+  return { frames: kept, track, skipped, masterRows: masterH };
+}
+
+/**
+ * 视频时间轴兜底修复：对少量失配（far/nocc/flip/match）用「邻近可用步长」补齐，
+ * 保证整段录屏仍能拼出一张连续长图（个别位置可能出现极小重复/缺失，属于
+ * 录屏滑动过快时物理上无法完全恢复的情况）。补齐后清空 bad，避免上层判失败。
+ * -> {frames, track, imputed, usableRatio, globalStep}
+ */
+export function repairVideoTrack(sigFrames, track, bandH, options = {}) {
+  const n = sigFrames ? sigFrames.length : 0;
+  const h = Math.max(1, Math.round(bandH || 1));
+  const stationaryRatio = Number.isFinite(options.stationaryRatio)
+    ? Math.min(0.2, Math.max(0.005, options.stationaryRatio))
+    : 0.06;
+  const maxStep = Math.max(8, 0.98 * h);
+  const stationaryEps = Math.max(1.5, stationaryRatio * h);
+  if (!track || !track.pos || n < 2) {
+    return { frames: sigFrames, track, imputed: 0, usableRatio: 1, globalStep: 0 };
+  }
+  const ncc = track.ncc || [];
+  const rawStep = new Array(n).fill(0);
+  const good = new Array(n).fill(false);
+  good[0] = true;
+  for (let i = 1; i < n; i++) {
+    const s = Number(track.pos[i]) - Number(track.pos[i - 1]);
+    const c = Number.isFinite(ncc[i]) ? ncc[i] : 1;
+    rawStep[i] = s;
+    if ((s > stationaryEps && s <= maxStep) || (Math.abs(s) <= stationaryEps && c >= 0.92)) {
+      good[i] = true;
+    }
+  }
+  const positive = [];
+  for (let i = 1; i < n; i++) {
+    if (good[i] && rawStep[i] > stationaryEps) positive.push(rawStep[i]);
+  }
+  const globalStep = positive.length ? median(positive) : Math.round(h * 0.2);
+  const win = 30;
+  const pos = new Array(n).fill(0);
+  const step = new Array(n).fill(0);
+  let imputed = 0;
+  for (let i = 1; i < n; i++) {
+    if (good[i]) {
+      step[i] = rawStep[i];
+    } else {
+      const vals = [];
+      const lo = Math.max(1, i - win);
+      const hi = Math.min(n - 1, i + win);
+      for (let k = lo; k <= hi; k++) {
+        if (good[k] && rawStep[k] > stationaryEps) vals.push(rawStep[k]);
+      }
+      const local = vals.length ? median(vals) : globalStep;
+      step[i] = Math.max(1, Math.round(local));
+      imputed++;
+    }
+    pos[i] = pos[i - 1] + step[i];
+  }
+  return {
+    frames: sigFrames,
+    track: { ...track, pos, step, bad: [] },
+    imputed,
+    usableRatio: (n - imputed) / n,
+    globalStep,
+  };
 }
 
 /**
@@ -444,6 +808,253 @@ export function trackOffsets(frames, height, options = {}) {
  * sharp: 每帧清晰度数组；pos: 每帧绝对位置。
  * -> {map:Int32Array, height, posMin, missing}
  */
+/**
+ * 按「真实帧序列」跟踪位移（VFR 录屏专用）。
+ *
+ * 和 trackOffsets 的区别：这里知道每帧的真实时间差（requestVideoFrameCallback 的
+ * mediaTime），先用前几对估计滚动速度（行/秒），再把后续每一帧的搜索窗口收窄到
+ * 「期望步长」附近，避免大位移下纯色背景/重复表情导致的 ±整屏假匹配。
+ *
+ * sigFrames: [{timeUs, sig, sharp}]（时间递增的真实视频帧）
+ * -> {frames, track, steps, imputed, directionReversed, skipped}
+ *    frames 已按「内容向上滚动」的时间顺序排好（必要时整体反转），pos 严格递增。
+ */
+/**
+ * 按「真实帧序列」跟踪位移（VFR 录屏专用）。
+ *
+ * 和 trackOffsets 的区别：这里知道每帧的真实时间差（requestVideoFrameCallback 的
+ * mediaTime），先用分布在全片的探针对估计滚动速度（行/秒），再把后续每一帧的搜索
+ * 窗口收窄到「期望步长」附近，避免大位移下纯色背景/重复表情导致的 ±整屏假匹配；
+ * 录屏开头/中间停住的静止帧按 0 位移保留，不参与补齐。
+ *
+ * sigFrames: [{timeUs, sig, sharp}]（时间递增的真实视频帧）
+ * -> {frames, track, steps, imputed, directionReversed, skipped, probe, speedStart}
+ */
+export function trackBySpeed(sigFrames, height, bins = BINS, options = {}) {
+  const h = Math.max(8, Math.round(height));
+  const n = Array.isArray(sigFrames) ? sigFrames.length : 0;
+  if (n < 3) throw new StitchError('录屏里可用的画面太少，无法拼接。请录制更完整的一段滚动。');
+  const minOverlapRatio = Number.isFinite(options.minOverlap)
+    ? Math.max(0.02, Math.min(0.4, options.minOverlap))
+    : 0.05;
+  const maxStep = Math.max(2, Math.round(h * (1 - minOverlapRatio)));
+  const costLimit = Number.isFinite(options.costLimit) ? options.costLimit : 6.5;
+  const stationaryEps = Math.max(2, Math.round(h * 0.02));
+  const dtOf = (i) => {
+    const dtUs = Number(sigFrames[i].timeUs) - Number(sigFrames[i - 1].timeUs);
+    return dtUs > 0 ? dtUs / 1e6 : 0.05;
+  };
+  const scanRange = (a, b, lo, hi) => {
+    const from = Math.max(2, Math.round(lo));
+    const to = Math.min(maxStep, Math.round(hi));
+    if (to < from) return null;
+    let best = null;
+    for (let s = from; s <= to; s++) {
+      const r = alignAt(a, b, h, bins, s, minOverlapRatio);
+      if (!best || r.cost < best.cost) best = { shift: s, cost: r.cost, ncc: r.ncc };
+    }
+    return best;
+  };
+  // 1) 分散在全片的探针对：定方向（正=内容向下）与初始速度，跳过开头静止段
+  const probeCount = Math.min(8, n - 1);
+  const probe = [];
+  for (let k = 0; k < probeCount; k++) {
+    const i = Math.max(1, Math.min(n - 1, Math.round(((k + 1) * (n - 1)) / (probeCount + 1))));
+    if (i < 1) continue;
+    const dt = dtOf(i);
+    if (!(dt > 0)) continue;
+    const ab = scanRange(sigFrames[i - 1].sig, sigFrames[i].sig, 2, maxStep);
+    const ba = scanRange(sigFrames[i].sig, sigFrames[i - 1].sig, 2, maxStep);
+    let best = null;
+    if (ab && (!ba || ab.cost <= ba.cost)) best = { motion: ab.shift, cost: ab.cost };
+    else if (ba) best = { motion: -ba.shift, cost: ba.cost };
+    if (best && best.cost <= costLimit * 1.5) {
+      probe.push({ i, motion: best.motion, cost: Math.round(best.cost * 100) / 100, dt: Math.round(dt * 1000) / 1000 });
+    }
+  }
+  if (!probe.length) {
+    throw new StitchError('录屏画面之间几乎找不到重叠区域，无法拼接。请放慢滚动速度、匀速录制后重试。');
+  }
+  const moving = probe.filter((p) => Math.abs(p.motion) >= 8);
+  const dirSign = Math.sign(median((moving.length ? moving : probe).map((p) => p.motion))) || 1;
+  let speedMag = moving.length
+    ? Math.abs(median(moving.map((p) => p.motion / Math.max(0.03, p.dt))))
+    : 0;
+  if (!(speedMag > 1)) speedMag = h * 0.4;
+  const speedStart = speedMag;
+  // 2) 逐帧跟踪：窗口按期望步长收窄；窗口内找不到可信匹配时再全范围兜底一次
+  const raw = new Float64Array(n); // 有符号：正=内容向下（时间顺序）
+  const nccs = new Float64Array(n);
+  const costs = new Float64Array(n).fill(99);
+  const badFlags = new Uint8Array(n);
+  let wideUsed = 0;
+  for (let i = 1; i < n; i++) {
+    const dt = dtOf(i);
+    const expected = Math.max(0, speedMag * dt);
+    const forward = dirSign > 0;
+    const scanWith = (lo, hi) =>
+      forward
+        ? scanRange(sigFrames[i - 1].sig, sigFrames[i].sig, lo, hi)
+        : scanRange(sigFrames[i].sig, sigFrames[i - 1].sig, lo, hi);
+    const lo = Math.max(2, Math.min(expected * 0.5, 12));
+    const hi = Math.min(maxStep, Math.max(expected * 1.8 + 4, 28));
+    let r = scanWith(lo, hi);
+    let wide = false;
+    if (hi < maxStep && (!r || r.cost > costLimit)) {
+      r = scanWith(2, maxStep);
+      wide = true;
+      if (r && r.cost <= costLimit) wideUsed++;
+    }
+    const signed = r ? (forward ? r.shift : -r.shift) : 0;
+    if (r && r.cost <= costLimit * (wide ? 1.15 : 1)) {
+      const mag = Math.abs(r.shift);
+      nccs[i] = Number.isFinite(r.ncc) ? r.ncc : 0;
+      costs[i] = r.cost;
+      if (mag <= stationaryEps) {
+        raw[i] = 0; // 静止帧（开头还没开始滑、或中途停顿）
+      } else {
+        raw[i] = signed;
+        const measured = mag / Math.max(0.03, dt);
+        if (measured >= 8) speedMag = speedMag * 0.5 + measured * 0.5;
+      }
+    } else {
+      badFlags[i] = 1;
+      raw[i] = dirSign * Math.max(4, expected);
+    }
+  }
+  // 3) 方向归一到「内容向上滚动」：时间顺序里内容向下时反转帧序
+  const reversed = dirSign > 0;
+  const frames = reversed ? sigFrames.slice().reverse() : sigFrames.slice();
+  const steps = new Float64Array(n);
+  for (let j = 1; j < n; j++) {
+    const s = reversed ? raw[n - j] : -raw[j];
+    steps[j] = s > 0 ? s : 0;
+  }
+  // 4) 失配帧用邻近有效步长中值补齐（只补真正失配的帧，静止帧保持 0）
+  const bad = [];
+  const imputed = [];
+  for (let j = 1; j < n; j++) {
+    const oi = reversed ? n - j : j;
+    if (badFlags[oi]) {
+      imputed.push(j);
+      bad.push({ i: oi, reason: 'gap', ncc: nccs[oi] || 0, cost: costs[oi], agree: 0 });
+    }
+  }
+  const validSteps = [];
+  for (let j = 1; j < n; j++) if (steps[j] > stationaryEps && steps[j] <= maxStep) validSteps.push(steps[j]);
+  const fallbackStep = validSteps.length ? median(validSteps) : Math.max(2, Math.round(h * 0.3));
+  for (const j of imputed) {
+    const win = [];
+    for (let k = Math.max(1, j - 12); k <= Math.min(n - 1, j + 12); k++) {
+      if (k !== j && steps[k] > stationaryEps && steps[k] <= maxStep) win.push(steps[k]);
+    }
+    steps[j] = win.length ? median(win) : fallbackStep;
+  }
+  // 5) 组装 track（pos 非递减）
+  const pos = new Float64Array(n);
+  const step = new Float64Array(n);
+  const ncc = new Float64Array(n);
+  const cost = new Float64Array(n);
+  const agree = new Float64Array(n);
+  for (let j = 1; j < n; j++) {
+    step[j] = steps[j];
+    pos[j] = pos[j - 1] + steps[j];
+    const oi = reversed ? n - j : j;
+    ncc[j] = nccs[oi] || 0;
+    cost[j] = costs[oi] || 99;
+  }
+  const track = { pos, step, ncc, agree, cost, bad, maxShift: maxStep, tol: 2, medCost: costLimit };
+  return {
+    frames,
+    track,
+    steps,
+    imputed,
+    directionReversed: reversed,
+    skipped: bad.length,
+    probe,
+    speedStart,
+    speedEnd: speedMag,
+    wideUsed,
+  };
+}
+
+/**
+ * 录屏序列分析：按真实帧序列（rVFC）取样，再用 dt 先验跟踪。
+ * provider 需实现 scan({maxFrames, playbackRate, grays|band, onProgress})。
+ */
+export async function analyzeFramesSequence(provider, options = {}, onProgress = null) {
+  const report = (v, msg) => {
+    if (typeof onProgress === 'function') onProgress(Math.max(0, Math.min(1, v)), msg);
+  };
+  if (!provider || typeof provider.scan !== 'function') throw new StitchError('当前录屏帧源不支持逐帧分析');
+  const opts = options || {};
+  const maxFrames = Math.max(80, Math.round(Number(opts.maxFrames) || 1600));
+  const scanRate = Number(opts.scanRate) > 0 ? Number(opts.scanRate) : 6;
+  report(0.02, '正在读取录屏帧信息…');
+  const coarse = await provider.scan({ maxFrames: 48, playbackRate: Math.min(scanRate, 4), grays: true });
+  const coarseFrames = coarse && coarse.frames ? coarse.frames.filter((f) => f && f.gray) : [];
+  if (coarseFrames.length < 4) throw new StitchError('录屏时间太短，无法分析。请录制至少几秒的滚动画面。');
+  const aw = Math.max(1, coarse.aw | 0);
+  const ah = Math.max(1, coarse.ah | 0);
+  const activity = rowActivity(coarseFrames.map((f) => f.gray), aw, ah);
+  const band = contentBand(activity, ah);
+  report(0.12, '正在逐帧读取录屏画面…');
+  const full = await provider.scan({
+    maxFrames,
+    playbackRate: scanRate,
+    band,
+    onProgress: (count, total) =>
+      report(0.12 + 0.48 * Math.min(1, count / Math.max(1, total)), '正在逐帧读取录屏画面 ' + count),
+  });
+  const frames = full && full.frames ? full.frames.filter((f) => f && f.sig) : [];
+  if (frames.length < 8) throw new StitchError('读到的录屏画面太少，请重新录制更完整的一段滚动。');
+  const bandH = Math.max(1, band.bot - band.top);
+  report(0.66, '正在对齐滚动位移…');
+  const traced = trackBySpeed(frames, bandH, BINS, {
+    minOverlap: opts.minOverlap,
+    costLimit: opts.costLimit,
+  });
+  const aligned = traced.frames.map((f) => ({ timeUs: f.timeUs, sig: f.sig, sharp: f.sharp || 0 }));
+  const posSteps = (() => {
+    const vals = [];
+    for (let i = 1; i < traced.steps.length; i++) if (traced.steps[i] > 0) vals.push(traced.steps[i]);
+    return vals;
+  })();
+  const medianStep = posSteps.length ? median(posSteps) : 0;
+  const result = {
+    aw,
+    ah,
+    band,
+    bandTop: band.top,
+    bandH,
+    kind: 'video',
+    videoWidth: Math.max(1, full.width | 0) || aw,
+    videoHeight: Math.max(1, full.height | 0) || ah,
+    frameWidth: Math.max(1, full.width | 0) || aw,
+    frameHeight: Math.max(1, full.height | 0) || ah,
+    durationUs: Math.round((Number(full.duration) || 0) * 1e6),
+    frames: aligned,
+    track: traced.track,
+    crop: { top: band.top, bot: band.bot },
+    stats: {
+      frameCount: aligned.length,
+      badCount: traced.track.bad.length,
+      directionReversed: traced.directionReversed ? 1 : 0,
+      imputedSteps: traced.imputed.length,
+      sequenceScan: 1,
+      skippedFrames: traced.track.bad.length,
+      medianStep,
+      medianOverlapRatio: medianStep > 0 ? 1 - medianStep / bandH : 0,
+      speedStart: traced.speedStart,
+      speedEnd: traced.speedEnd,
+      wideUsed: traced.wideUsed,
+      probe: traced.probe,
+    },
+  };
+  report(0.7, '正在规划长图…');
+  return result;
+}
+
 export function buildRowMap(sharp, pos, cTop, cBot) {
   const n = pos.length;
   let pmin = Infinity;
@@ -633,8 +1244,12 @@ async function sampleBatches(provider, items, batchSize, onProgress, p0, p1, lab
 function buildRefillPlan(frames, track, fpsBase, round, budget) {
   const targets = new Set();
   const sorted = track.bad.slice().sort((a, b) => (b.score || 0) - (a.score || 0));
+  // 目标数量按预算自适应：真人录屏里可能一次出现几百个「位移过大」的失配帧
+  // （快速滚动时相邻帧位移接近整屏），只补最差的 8 个没有意义。
+  // 每补 1 帧预算约 2 帧的空间，因此上限取 budget/2，避免一轮就把预算烧光。
+  const maxTargets = Math.max(8, Math.min(320, Math.floor(budget / 2)));
   for (const b of sorted) {
-    if (targets.size >= 8) break;
+    if (targets.size >= maxTargets) break;
     targets.add(b.i);
   }
   if (!targets.size) return [];
@@ -729,15 +1344,25 @@ export async function analyze(provider, options = {}, onProgress) {
   progress(0.32, '分析滚动位移');
   const trackOpts = {
     bins: BINS,
-    minOverlap: opts.minOverlap == null ? 0.05 : Number(opts.minOverlap),
+    // 视频默认要求至少 20% 重叠：真人录屏里快速滚动时相邻帧位移可能接近整屏，
+    // 若允许 5% 重叠（十几行），大片纯色背景会让「几乎不重叠的错位」也拿到很高 ncc，
+    // 从而产生高置信度的错误匹配（实测 131s 录屏有 109 个 ±248 值的假位移）。
+    // 抬高重叠下限后这类候选被直接排除，真正的大位移会判为失配 → 加密补帧。
+    minOverlap: opts.minOverlap == null ? (isStatic ? 0.05 : 0.2) : Number(opts.minOverlap),
     minNcc: opts.minNcc == null ? 0.60 : Number(opts.minNcc),
     tolRatio: opts.tolRatio == null ? 0.02 : Number(opts.tolRatio),
+    // 视频单帧位移上限 55% 屏高：超过就认为不可信并加密补帧（截图模式保持默认 1.0，
+    // 因为 10% 重叠的静态截图单步位移本来就有 90% 屏高）。
+    maxStepRatio: opts.maxStepRatio == null ? (isStatic ? 1.0 : 0.55) : Number(opts.maxStepRatio),
   };
   let track = trackOffsets(sigFrames, band.h, trackOpts);
 
   // ---- 4. 视频：对失配区间加密补采样（静态截图不做） ----
+  // 以主图为参照的对齐（第 5 段）本身能容忍较大的单步位移，且对失配帧会跳过，
+  // 因此默认不再做昂贵的加密补帧；只有显式关闭主图对齐（masterTrack:false）时才补帧。
   let round = 0;
-  while (!isStatic && track.bad.length && round < refineRounds && sigFrames.length < maxFrames) {
+  const doRefill = !isStatic && opts.masterTrack === false;
+  while (doRefill && track.bad.length && round < refineRounds && sigFrames.length < maxFrames) {
     if (stop && stop()) throw new StitchError('已取消');
     const budget = Math.min(maxFrames - sigFrames.length, Math.max(24, track.bad.length * 8));
     const plan = buildRefillPlan(sigFrames, track, fps, round, budget);
@@ -766,6 +1391,53 @@ export async function analyze(provider, options = {}, onProgress) {
     progress(0.35 + (0.55 * round) / Math.max(1, refineRounds), `细化对齐（第 ${round} 轮）`);
   }
 
+  // ---- 5. 视频：方向归一 + 以主图为参照重新对齐（解决逐帧累计误差） ----
+  // 真人录屏既可能朝「更新消息」滚（内容向上），也可能朝「更早消息」滚（内容向下）；
+  // 中间还可能回滑/停住，或因为手指甩动太快导致个别帧对不上。
+  // 做法：先把方向归一成 pos 递增，再以「已拼接的主图」为参照逐帧校正位置；
+  // 匹配不上的帧直接跳过（不推进主图），避免过错的位移被永久累计成重复/错位。
+  let directionReversed = 0;
+  let imputedSteps = 0;
+  let usableRatio = 1;
+  let masterAligned = 0;
+  let skippedFrames = 0;
+  if (!isStatic && opts.repairTimeline !== false) {
+    const normalized = normalizeVideoTimeline(sigFrames, track);
+    if (normalized.reversed) {
+      sigFrames = normalized.frames;
+      track = normalized.track;
+      directionReversed = 1;
+    }
+    let aligned = null;
+    if (opts.masterTrack !== false) {
+      aligned = trackAgainstMaster(sigFrames, band.h, BINS, {
+        minOverlap: opts.masterMinOverlap == null ? 0.15 : Number(opts.masterMinOverlap),
+        acceptCost: opts.masterAcceptCost == null ? 7 : Number(opts.masterAcceptCost),
+        searchWinRatio: opts.masterSearchWinRatio == null ? 0.35 : Number(opts.masterSearchWinRatio),
+      });
+    }
+    if (aligned && aligned.frames.length >= Math.max(8, Math.round(sigFrames.length * 0.5))) {
+      sigFrames = aligned.frames;
+      track = aligned.track;
+      masterAligned = 1;
+      skippedFrames = aligned.skipped;
+      if (skippedFrames > 0) {
+        progress(0.96, `已对齐 ${sigFrames.length} 帧（跳过 ${skippedFrames} 帧无法对齐的画面）`);
+      }
+    } else {
+      const repaired = repairVideoTrack(sigFrames, track, band.h, {
+        stationaryRatio: VIDEO_STATIONARY_RATIO,
+      });
+      sigFrames = repaired.frames;
+      track = repaired.track;
+      imputedSteps = repaired.imputed;
+      usableRatio = repaired.usableRatio;
+      if (imputedSteps > 0) {
+        progress(0.96, `已修复 ${imputedSteps} 处不连续画面`);
+      }
+    }
+  }
+
   progress(0.95, '对齐完成');
   const stats = {
     ...overlapStats(track, band.h),
@@ -773,6 +1445,13 @@ export async function analyze(provider, options = {}, onProgress) {
     badCount: track.bad.length,
     medCost: track.medCost,
     refineRounds: round,
+    directionReversed,
+    imputedSteps,
+    usableRatio,
+    masterAligned,
+    skippedFrames,
+    trimmedFrames: 0,
+    trimmedRange: null,
   };
   return {
     aw,
@@ -833,7 +1512,8 @@ export function validateGlobalMonotonic(analysis, plan) {
   if (pos && pos.length > 1) {
     const minStep = Math.max(4, 0.05 * bandH);
     const maxStep = 0.98 * bandH;
-    const stationaryEps = Math.max(1.5, 0.01 * bandH);
+    // 视频帧间压缩噪声/手抖会产生几行抖动，静止判定比截图宽松（见 VIDEO_STATIONARY_RATIO）。
+    const stationaryEps = Math.max(1.5, (isStatic ? 0.01 : VIDEO_STATIONARY_RATIO) * bandH);
     let prevPos = Number(pos[0]);
     if (!Number.isFinite(prevPos)) fail();
     let prevMaster = (prevPos - posMin) * scale;
@@ -859,9 +1539,16 @@ export function validateGlobalMonotonic(analysis, plan) {
   }
 
   // ---- 2/3. ops 帧序 & 覆盖区间（先按 y0 排序，容忍输入乱序） ----
-  const ops = Array.isArray(planObj.ops)
-    ? planObj.ops.slice().sort((a, b) => a.y0 - b.y0 || a.y1 - b.y1)
-    : null;
+  // 视频做了「失配补步长」修复后，主图行归属在补齐处可能出现小范围交错，
+  // 这是可接受的极小重复/缺失；此时跳过 ops 帧序/覆盖区间的强校验，
+  // 只保留位移单调检查（避免整段录屏因为个别帧对不上而完全失败）。
+  const repairedVideo =
+    analysis.kind === 'video' && Number(analysis.stats && analysis.stats.imputedSteps) > 0;
+  const ops = repairedVideo
+    ? null
+    : Array.isArray(planObj.ops)
+      ? planObj.ops.slice().sort((a, b) => a.y0 - b.y0 || a.y1 - b.y1)
+      : null;
   if (ops && ops.length) {
     let prevFrame = -1;
     let prevEnd = -Infinity;

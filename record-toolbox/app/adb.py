@@ -11,13 +11,17 @@ import os
 import re
 import subprocess
 import time
+import logging
 from dataclasses import dataclass
 from typing import Iterable
 
 from . import paths
 
+log = logging.getLogger("record_toolbox.adb")
 NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+# adb 的 mDNS 自动连接传输条目，不能作为 -s serial 使用
+_MDNS_TRANSPORT_RE = re.compile(r"_adb-tls-(?:connect|pairing)\._tcp\.?$", re.IGNORECASE)
 
 
 class AdbError(RuntimeError):
@@ -128,6 +132,13 @@ class Adb:
             parts = line.split()
             if len(parts) < 2:
                 continue
+            # adb 会自动通过 mDNS 记录无线调试传输，serial 形如
+            #   adb-ABCD1234-xxxx._adb-tls-connect._tcp
+            # 这种条目无法直接作为 `adb -s <serial>` 使用（设备一断开就变成
+            # "device 'xxx._adb-tls-connect._tcp' not found"），因此不作为可选设备暴露。
+            if _MDNS_TRANSPORT_RE.search(parts[0]):
+                log.info("忽略 mDNS 传输条目：%s", parts[0])
+                continue
             device = Device(serial=parts[0], state=parts[1])
             device.wireless = ":" in device.serial
             for item in parts[2:]:
@@ -153,6 +164,29 @@ class Adb:
             "没有检测到已授权的手机。请用数据线连接手机、打开「USB 调试」，"
             "并在手机上点「允许 USB 调试」。"
         )
+
+    def resolve_online(self, serial: str | None = None) -> str:
+        """校验 serial 是否仍在线；只有一个在线设备时自动改用真实 serial。
+
+        这样即使前端保存过已失效的 serial（例如无线调试端口变化、
+        mDNS 传输条目消失），也只需刷新设备即可恢复，而不是每条命令都报
+        "device not found"。
+        """
+        devices = self.devices()
+        online = [d for d in devices if d.state == "device"]
+        wanted = (serial or "").strip()
+        if wanted and any(d.serial == wanted for d in online):
+            return wanted
+        if len(online) == 1:
+            if wanted:
+                log.info("设备 %s 已断开，自动改用在线设备 %s", wanted, online[0].serial)
+            return online[0].serial
+        if not online:
+            raise AdbError(
+                "没有检测到已连接且已授权的手机。请插好数据线并打开「USB 调试」，"
+                "或在「连接设备」里重新连接无线调试后再试。"
+            )
+        raise AdbError("之前选择的设备已断开，请点「刷新设备」后重新选择。")
 
     # -------------------------------------------------------------- 设备信息
     def screen_size(self, serial: str | None = None) -> tuple[int, int]:

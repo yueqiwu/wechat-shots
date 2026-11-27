@@ -129,6 +129,48 @@ def post(url: str, payload: dict, timeout: float = 120) -> dict:
 
 
 # ---------------------------------------------------------------- 场景
+def scenario_adb_preview(cdp: CDP) -> None:
+    """真机（USB）回归：设备列表能列出真实 serial、切换导出页能自动读到当前画面。"""
+    log("场景：手机截图导出（真机 USB 预览）")
+    cdp.js("window.__E2E = true; true")
+    cdp.js(
+        """(() => { const el=document.querySelector('[data-testid="home-card-adb"]');
+        if(el){el.click();return true;} return false; })()"""
+    )
+    time.sleep(1.5)
+    cdp.js(
+        """(() => { const b=document.querySelector('[data-testid="adb-refresh"]');
+        if(b){b.click();return true;} return false; })()"""
+    )
+    listed = cdp.wait_js("/3B65CB029KV00000|PLR110|一加/.test(document.body.innerText)", 40)
+    if not listed:
+        raise RuntimeError("设备列表里没有找到真机 serial（3B65CB029KV00000 / PLR110）")
+    cdp.shot("20-real-adb-devices.png")
+    cdp.js(
+        """(() => { const b=document.querySelector('[data-testid="adb-tab-export"]');
+        if(b){b.click();return true;} return false; })()"""
+    )
+    ok = False
+    for _ in range(40):
+        time.sleep(1.0)
+        txt = cdp.js("document.body.innerText.slice(0, 4000)") or ""
+        if "读取画面失败" in txt:
+            cdp.shot("21-real-adb-preview-fail.png")
+            raise RuntimeError("真机预览失败：" + txt[:800])
+        has_img = cdp.js(
+            "!!(document.querySelector('.preview-frame img') && "
+            "document.querySelector('.preview-frame img').complete && "
+            "document.querySelector('.preview-frame img').naturalWidth > 0)"
+        )
+        if has_img:
+            ok = True
+            break
+    cdp.shot("21-real-adb-preview.png")
+    if not ok:
+        raise RuntimeError("真机预览图片没有加载出来")
+    log("真机预览通过（读取到当前画面）")
+
+
 def scenario_home(cdp: CDP) -> None:
     log("场景：首页与路由")
     cdp.wait_js("document.body && document.body.innerText.length > 0", 20)
@@ -151,7 +193,7 @@ def scenario_home(cdp: CDP) -> None:
 
 def scenario_video(cdp: CDP, port: int, out_dir: str) -> None:
     log("场景：录屏转截图全流程")
-    video = os.path.join(ROOT, "..", "wechat-shots", "input.mp4")
+    video = os.environ.get("RTB_E2E_VIDEO") or os.path.join(ROOT, "..", "wechat-shots", "input.mp4")
     video = os.path.abspath(video)
     if not os.path.isfile(video):
         raise SystemExit(f"缺少测试视频：{video}")
@@ -169,12 +211,9 @@ def scenario_video(cdp: CDP, port: int, out_dir: str) -> None:
     while time.time() - t0 < 420:
         time.sleep(3)
         txt = cdp.js("document.body.innerText.slice(0, 4000)") or ""
-        has_result = cdp.js(
-            "!!document.querySelector('[data-testid=\"video-result\"]') || "
-            "!!document.querySelector('[data-testid=\"video-save\"]') || "
-            "/导出完成|已生成\\s*\\d+\\s*页/.test(document.body.innerText)"
-        )
-        if has_result and "正在分析" not in txt and "正在拼接" not in txt:
+        body_text = cdp.js("document.body.innerText") or ""
+        has_result = ("共生成" in body_text) and ("渲染第" not in body_text)
+        if has_result:
             break
         if "失败" in txt or "错误" in txt:
             cdp.shot("05-video-error.png")
@@ -192,6 +231,17 @@ def scenario_video(cdp: CDP, port: int, out_dir: str) -> None:
     newest = max(dirs, key=os.path.getmtime)
     pages = sorted(n for n in os.listdir(newest) if n.lower().endswith(".png"))
     if len(pages) < 5:
+        try:
+            dbg = cdp.js(
+                "JSON.stringify({analyze: window.__RT_ANALYZE_ROUTE||null,"
+                " opts: window.__RT_ANALYZE_OPTS||null,"
+                " video: window.__RT_VIDEO_DEBUG||null,"
+                " render: window.__RT_RENDER_DEBUG||null,"
+                " body: document.body.innerText.slice(0,600)})"
+            )
+            log("页面诊断：" + str(dbg)[:4000])
+        except Exception as err:
+            log("读取页面诊断失败：" + str(err))
         raise RuntimeError(f"录屏保存页面过少：{len(pages)}（{newest}）")
     log(f"录屏保存 {len(pages)} 页 → {newest}")
 
@@ -348,7 +398,7 @@ def scenario_static(cdp: CDP, port: int, out_dir: str) -> None:
 # ---------------------------------------------------------------- 主流程
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", choices=["home", "video", "adb", "static", "all"], default="all")
+    ap.add_argument("--only", choices=["home", "video", "adb", "static", "preview", "all"], default="all")
     ap.add_argument("--keep", action="store_true")
     ap.add_argument("--debug-port", type=int, default=9333)
     args = ap.parse_args()
@@ -423,6 +473,8 @@ def main() -> int:
                 scenario_static(cdp, port, out_dir)
             if args.only in ("all", "adb"):
                 scenario_adb(cdp, port, out_dir)
+            if args.only == "preview":
+                scenario_adb_preview(cdp)
         finally:
             cdp.close()
         log("E2E 通过 ✅")
