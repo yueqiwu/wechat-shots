@@ -190,7 +190,7 @@ fun ExportPane(
                         )
                     }
                     Text(
-                        text = "包含起止日期。相邻截图会保留约一半重叠，确保跨页消息不被截断。",
+                        text = "包含起止日期。截图之间保留少量重叠（约 10%～25%，视机型而自动调整），输出时自动去重，确保跨页消息不被截断。",
                         style = IosType.footnote,
                         color = colors.textSecondary,
                     )

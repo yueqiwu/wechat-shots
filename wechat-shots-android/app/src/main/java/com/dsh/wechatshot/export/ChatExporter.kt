@@ -88,8 +88,29 @@ class ChatExporter(
 ) {
     companion object {
         private const val MAX_PAGES = 400
-        private const val SWIPE_DURATION_MS = 750
-        private const val SETTLE_DELAY_MS = 700L
+
+        /**
+         * 手势位移占聊天可视高度的比例（从 12%h 滑到 88%h）。
+         * 产品目标是让相邻截图只保留少量重叠（约 10%～25%，视机型而自动调整），即实际滚动约 90%h，
+         * 但拼接引擎单对最大可匹配位移只有「可视高 - 10%h」（可视高 1979px 时约 1781px），
+         * 滚动贴到 90%h 就会整对判坏、拼接失败；
+         * 而且实测 13% 左右的重叠在重复气泡较多时会被错误对齐（长图高度明显偏短）。
+         * 模拟器实测（屏高 1979px，滚动无额外惯性，实际步长≈手势位移）：
+         * 76%h → 21 帧拼成 31971px，0 坏帧，16 页，质量全过；
+         * 87%h → 19 帧覆盖同样内容，但拼接把位移算错（长图仅 14198px），内容缺失；
+         * 90%h → 位移超过引擎可匹配上限，拼接直接失败回退。
+         * 因此取 76%h（实际重叠约 24%），在引擎可靠区间内尽量接近“每屏滚一屏”：
+         * 截图张数比旧版减少约三分之一，交给拼接阶段自动去重。
+         */
+        private const val SWIPE_SPAN_RATIO = 0.76f
+
+        /** 滑动耗时与停稳等待：慢一点可减少惯性外溢，并给滚动后的画面留出稳定时间。 */
+        private const val SWIPE_DURATION_MS = 900
+        private const val SETTLE_DELAY_MS = 900L
+
+        /** 滑动后等画面停稳：每 200ms 比对一次截图，连续两次一致即认为已停下（最多轮询 3 次）。 */
+        private const val STABLE_POLL_INTERVAL_MS = 200L
+        private const val STABLE_POLL_MAX = 3
         private const val SYSTEM_UI_PACKAGE = "com.android.systemui"
         private const val SYSTEM_UI_GRACE_MS = 60_000L
 
@@ -292,10 +313,13 @@ class ChatExporter(
                     }
                 }
 
-                val startY = layout.top + (layout.height * 0.25f).toInt()
-                val endY = layout.top + (layout.height * 0.75f).toInt()
+                // 位移约 76% 可视高度（实际重叠约 24%，拼接引擎可靠区间内），交给拼接阶段自动去重。
+                val travel = (layout.height * SWIPE_SPAN_RATIO).toInt()
+                val startY = layout.top + (layout.height - travel) / 2
+                val endY = startY + travel
                 adb.swipe(layout.centerX, startY, layout.centerX, endY, SWIPE_DURATION_MS)
                 delay(SETTLE_DELAY_MS)
+                awaitScreenSettled()
             }
 
             if (scanned >= MAX_PAGES) maxReached = true
@@ -353,6 +377,33 @@ class ChatExporter(
                 runCatching { directory.delete() }
             }
             throw e
+        }
+    }
+
+    /**
+     * 滑动后等画面停稳：每 200ms 截一张图与上一张比对，连续两次完全一致即认为滚动已停下。
+     * 惯性会让画面在抬手后继续滑一段，未停稳就截图会得到偏移（甚至跨页）的一帧；
+     * 截图失败时直接放弃等待，由后续流程按原逻辑处理。
+     */
+    private suspend fun awaitScreenSettled() {
+        var previous: ByteArray = try {
+            adb.screencapPng()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return
+        }
+        repeat(STABLE_POLL_MAX) {
+            delay(STABLE_POLL_INTERVAL_MS)
+            val next: ByteArray = try {
+                adb.screencapPng()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                return
+            }
+            if (next.contentEquals(previous)) return
+            previous = next
         }
     }
 
@@ -473,7 +524,7 @@ class ChatExporter(
 
     /**
      * 捕获结束后的收尾：优先把重叠截图拼成互不重叠的长图再切页；
-     * 拼接不可用时回退为原始截图页（旧逻辑，页间保留约 50% 重叠），保证不丢图。
+     * 拼接不可用时回退为原始截图页（旧逻辑，页间保留少量重叠），保证不丢图。
      */
     private suspend fun finish(
         request: ExportRequest,
@@ -526,7 +577,7 @@ class ChatExporter(
         return finalizeOutput(request, directory, finalPages, warnings, stitched, quality)
     }
 
-    /** 兜底：把临时目录里的原始截图页按「旧 -> 新」重命名为 001.png…（保留页间重叠）。 */
+    /** 兜底：把临时目录里的原始截图页按「旧 -> 新」重命名为 001.png…（保留页间少量重叠）。 */
     private fun moveRawPages(directory: File, pages: List<CapturedPage>): List<OutputPage> {
         val ordered = pages.asReversed()
         return ordered.mapIndexed { index, page ->
@@ -637,14 +688,17 @@ class ChatExporter(
             if (stitched && quality != null) {
                 appendLine(
                     "已把 " + quality.frameCount +
-                        " 张带约 50% 重叠的原始截图自动对齐、重建成长图，再按消息之间的空行切分。"
+                        " 张原始截图自动对齐、重建成长图后再切页。" +
+                        "截图之间保留少量重叠（约 10%～25%，视机型而自动调整），输出时自动去重。"
                 )
                 appendLine("页面关系：页与页之间无重叠、上下连续，没有重复内容，也没有缺失内容。")
                 appendLine(
                     "拼接质量：" + quality.summary() + "，重建长图高度 " + quality.masterHeight + " px。"
                 )
             } else if (pages.size >= 2) {
-                appendLine("每一页之间约有 50% 重叠，便于拼接阅读。")
+                appendLine(
+                    "截图之间保留少量重叠（约 10%～25%，视机型而自动调整；本次拼接未成功，未自动去重）。"
+                )
             }
             if (firstDate != null || lastDate != null) {
                 appendLine(

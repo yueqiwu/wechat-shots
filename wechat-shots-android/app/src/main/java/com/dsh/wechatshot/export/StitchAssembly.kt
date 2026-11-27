@@ -152,8 +152,8 @@ sealed class StitchResult {
 }
 
 /**
- * 无线 ADB 截图去重拼接：把「每张约 50% 重叠」的裁剪页对齐重建成长图，
- * 再按消息之间的空行切成互不重叠的连续页。
+ * 无线 ADB 截图去重拼接：把「相邻截图保留少量重叠（约 10%～25%，视机型而自动调整）」
+ * 的裁剪页自动对齐、去重，重建成长图，再按消息之间的空行切成互不重叠的连续页。
  *
  * 失败时返回 [StitchResult.Failure]，原始截图 PNG 不会被删除，调用方兜底输出。
  */
@@ -202,6 +202,16 @@ object StitchAssembler {
 
         val quality = StitchQualityCheck.evaluate(analysis, plan, first.height)
         if (!quality.ok) return StitchResult.Failure(quality.reasons.joinToString("；"))
+
+        // 全局单调性校验：拼接算法在重复气泡上可能把某对帧锁到错误位移（NCC 仍很高，
+        // 质量门的坏帧率抓不到），这里用「位移/步长/取帧顺序」硬约束兜底，
+        // 任何折返或异常步长都直接回退原始截图，绝不输出错位的长图。
+        val monotonicIssues = StitchPlanner.validateMaster(analysis, plan)
+        if (monotonicIssues.isNotEmpty()) {
+            log("拼接全局单调性校验未通过：" + monotonicIssues.first())
+            return StitchResult.Failure(monotonicIssues.joinToString("；"))
+        }
+        log("拼接全局单调性校验通过：相邻帧位移单调、步长稳定、主图取帧顺序无折返")
 
         val staged = File(workDir, "stitched")
         if (staged.isDirectory) staged.deleteRecursively()

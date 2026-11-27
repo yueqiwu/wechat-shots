@@ -1,5 +1,6 @@
 package com.dsh.wechatshot.stitch
 
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -220,6 +221,116 @@ object StitchPlanner {
             frameCount = analysis.frames.size,
             badCount = track.bad.size,
         )
+    }
+
+    // ---------- 全局单调性校验（质量门兜底） ----------
+
+    /**
+     * 全局单调性校验：确认「截图是依次向前滚动得到的」这一前提成立。
+     *
+     * 拼接算法在重复气泡（相同头像+相同宽度气泡反复出现）上可能把某一对帧锁到错误的
+     * 位移上——NCC 依然很高、正反向也一致，质量门的「坏帧率」抓不到，但重建出的长图
+     * 会在某一处内容折返/重复。这里用几条和画面内容无关的硬约束兜底：
+     *
+     *  1. 相邻（去重后）帧在分析坐标系里的位移必须严格向前，且在
+     *     [0.05*bandH, 0.98*bandH] 之间：太小说明停在原地或锁到了重复内容，
+     *     太大说明滚动超过引擎可匹配上限（重叠不足）。
+     *  2. 固定滑动距离的截图序列步长应基本稳定：与中位数偏差超过 35% 视为错锁。
+     *  3. 主图各行的取帧顺序不能折返：ops 按 y 升序时帧号应单调不减
+     *     （允许同一行附近相邻帧的轻微交错，等于同时覆盖该行的帧数）。
+     *
+     * @return 空列表表示通过；否则返回每条中文原因（最多几条），调用方应回退原始截图。
+     */
+    fun validateMaster(analysis: AnalysisResult, plan: MasterPlan): List<String> {
+        val sigs = analysis.frames
+        if (sigs.size < 2) return listOf("截图数量不足，无法校验拼接顺序")
+        val bandH = if (plan.bandH > 0) plan.bandH else (analysis.band.bot - analysis.band.top)
+        if (bandH <= 0) return listOf("聊天内容区高度非法，无法校验拼接顺序")
+        val minStep = maxOf(4.0, bandH * 0.05)
+        val maxStep = maxOf(minStep + 1.0, bandH * 0.98)
+        val reasons = ArrayList<String>(4)
+
+        // 逐帧位移：连续完全相同的截图（滚动到顶后重复截屏）不算步长，其余必须向前。
+        val track = analysis.track
+        val keep = ArrayList<Int>(sigs.size)
+        for (i in sigs.indices) {
+            if (i > 0 && sigs[i].sig.contentEquals(sigs[i - 1].sig)) continue
+            keep.add(i)
+        }
+        if (keep.size < 2) return listOf("有效滚动帧不足（重复截图过多），无法拼接")
+        val steps = DoubleArray(keep.size - 1)
+        for (k in 1 until keep.size) {
+            val cur = keep[k]
+            val prev = keep[k - 1]
+            val step = track.pos[cur] - track.pos[prev]
+            steps[k - 1] = step
+            if (reasons.size >= 3) continue
+            when {
+                !step.isFinite() -> reasons.add("第 ${cur + 1} 帧位移非法")
+                step <= 0.0 -> reasons.add(
+                    "第 ${cur + 1} 帧没有继续向前滚动（位移 ${step.roundToInt()}px），内容可能折返"
+                )
+                step < minStep -> reasons.add(
+                    "第 ${cur + 1} 帧滚动过小（${step.roundToInt()}px，下限 ${minStep.roundToInt()}px），" +
+                        "疑似锁在重复内容上"
+                )
+                step > maxStep -> reasons.add(
+                    "第 ${cur + 1} 帧滚动过大（${step.roundToInt()}px，上限 ${maxStep.roundToInt()}px），" +
+                        "截图之间重叠不足"
+                )
+            }
+        }
+
+        // 步长一致性：固定滑动距离下，各相邻帧的滚动量应接近。
+        val validSteps = steps.filter { it.isFinite() && it > 0.0 }
+        if (validSteps.size >= 2 && reasons.size < 3) {
+            val med = StitchCore.median(validSteps.toDoubleArray())
+            val tolerance = maxOf(8.0, med * 0.35)
+            var worstAt = -1
+            var worstDev = 0.0
+            for (k in steps.indices) {
+                if (!steps[k].isFinite() || steps[k] <= 0.0) continue
+                val dev = abs(steps[k] - med)
+                if (dev > tolerance && dev > worstDev) {
+                    worstDev = dev
+                    worstAt = k
+                }
+            }
+            if (worstAt >= 0) {
+                reasons.add(
+                    "第 ${keep[worstAt + 1] + 1} 帧滚动步长异常" +
+                        "（${steps[worstAt].roundToInt()}px，正常约 ${med.roundToInt()}px），疑似在重复气泡上错锁"
+                )
+            }
+        }
+
+        // 主图帧序：ops 按 y 升序，取帧号不能明显折返。
+        val ops = plan.ops
+        if (ops.isEmpty()) {
+            reasons.add("主图没有任何像素来源")
+        } else {
+            if (ops.first().y0 != 0) reasons.add("主图顶部缺少像素来源")
+            if (ops.last().y1 != plan.masterH) reasons.add("主图底部缺少像素来源")
+            var prevFrame = -1
+            var dropAt = -1
+            var dropFrom = -1
+            var dropTo = -1
+            for (op in ops) {
+                if (op.frame < 0) continue
+                if (prevFrame >= 0 && op.frame < prevFrame - 2 && dropAt < 0) {
+                    dropAt = op.y0
+                    dropFrom = prevFrame
+                    dropTo = op.frame
+                }
+                if (op.frame > prevFrame) prevFrame = op.frame
+            }
+            if (dropAt >= 0) {
+                reasons.add(
+                    "主图第 ${dropAt}px 处取帧顺序折返（帧号 $dropFrom → $dropTo），内容顺序错乱"
+                )
+            }
+        }
+        return reasons
     }
 
     // ---------- 内部 ----------

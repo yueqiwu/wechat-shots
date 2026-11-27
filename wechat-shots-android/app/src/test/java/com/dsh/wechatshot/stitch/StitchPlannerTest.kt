@@ -13,7 +13,7 @@ import kotlin.random.Random
  * 纯 JVM 单测：用合成灰度数据验证「截图 → 拼长图 → 按空行切页」的流程。
  *
  * 合成聊天长图：144 宽，每 200 行一个消息周期（150 行内容 + 50 行纯白空行），
- * 按 50% 重叠切成 9 张 1200 高的「截图」，验证：
+ * 按历史高重叠样本（步长为帧高的一半）切成 9 张 1200 高的「截图」，验证：
  *  - 重建长图高度 ≈ 原始长图高度（内容不重复、不丢失）；
  *  - 切页边界落在空行上，不会把一条消息劈成两半；
  *  - 按 ops 重建的像素与原始长图差异极小；
@@ -147,7 +147,7 @@ class StitchPlannerTest {
         val totalH = 6000
         val longImage = buildChatImage(totalH)
         val frames = framesOf(longImage, totalH, step = frameH / 2)
-        assertEquals("测试用例应切成 9 张 50% 重叠的截图", 9, frames.size)
+        assertEquals("测试用例应切成 9 张高重叠的历史样本截图", 9, frames.size)
 
         val analysis = StitchPlanner.analyzeStatic(
             samplesOf(frames),

@@ -45,3 +45,15 @@ real-out*/
 real-*.png
 real-*.xml
 .tmp_*
+
+# ---- Windows desktop toolbox ----
+record-toolbox/dist/
+record-toolbox/test-artifacts/
+record-toolbox/.spike/
+record-toolbox/**/__pycache__/
+record-toolbox/adb/*.exe
+record-toolbox/adb/*.dll
+record-toolbox/*.spec
+record-toolbox/sessions/
+.spike/
+record-toolbox/build/

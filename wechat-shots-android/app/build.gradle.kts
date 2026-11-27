@@ -23,8 +23,8 @@ android {
         applicationId = "com.dsh.wechatshot"
         minSdk = 30
         targetSdk = 37
-        versionCode = 5
-        versionName = "1.1.2"
+        versionCode = 6
+        versionName = "1.1.3"
     }
 
     signingConfigs {

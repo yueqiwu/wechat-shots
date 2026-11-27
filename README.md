@@ -1,12 +1,18 @@
 # 聊天截图导出（wechat-shot）
 
-Android 应用「聊天截图导出」的完整工程：App 源码、官网下载页、宝塔自动发布脚本。
+微信聊天记录截图导出工具，包含手机版 App 与 Windows 桌面版：把聊天记录自动整理成「不重叠、不重复、顺序完整」的截图 / 长图。
 
-- 官网：<https://qipaclub.top/wechat-shots-app/>
+| 端 | 说明 | 入口 |
+| --- | --- | --- |
+| Android App「聊天截图导出」 | 无线 ADB 自动翻页截图，或导入录屏自动转截图 | [官网下载](https://qipaclub.top/wechat-shots-app/) |
+| Windows「笔录工具箱」 | USB / 无线 ADB 自动滚屏截图（保留少量重叠→自动去重分页），或导入录屏转截图 | `record-toolbox/`（见其 README） |
+
+- Android 官网：<https://qipaclub.top/wechat-shots-app/>
 - 最新版本信息：<https://qipaclub.top/wechat-shots-app/version.json>
-- 应用包名：`com.dsh.wechatshot`，最低 Android 11（API 30）
+- Android 应用包名：`com.dsh.wechatshot`，最低 Android 11（API 30）
+- Windows 版：Python + WebView2，无需安装运行时（PyInstaller 打包，内置 adb）
 
-## 功能
+## Android 版功能
 
 两种导出方案，输出都是「不重叠、不重复、顺序完整」的截图：
 
@@ -32,24 +38,25 @@ Android 应用「聊天截图导出」的完整工程：App 源码、官网下�
 
 ## 实测数据（开发机 / 模拟器 + 真机）
 
-- 无线 ADB 方案（模拟器，mock 微信）：31 张约 50% 重叠的原始截图 → 重建长图 31979px → **16 页**，页间按高度零重叠、
-  Σ页高 = 长图高，全局重复约 **1.8%**（旧方案每页约 50%）；15 个切点全部落在空白行，无劈字。
+- 无线 ADB 方案（模拟器，mock 微信，v1.1.3）：21 张保留重叠的原始截图 → 重建长图 31971px → **16 页**，页间按高度零重叠、
+  Σ页高 = 长图高；拼接质量检查通过（坏帧 0/20、缺失 0 像素、全局单调性校验通过）。旧版截图重叠更大，同内容为 31 张 → 31979px → 16 页。
   另有页级 seam 质量门：一旦检测到相邻页内容重复（≥240 行连续相同且跨 ≥2 个消息块）自动回退为原始截图页并告警。
 - 无线 ADB 方案（真机 OnePlus Ace 6T / ColorOS / Android 17，v1.1.2）：无障碍自动配对 → TLS 连接 → 自动打开微信
-  「文件传输助手」→ 翻页截图 → 拼接切页端到端跑通。日期区间 11-16~11-27：2 张 50% 重叠截图 → 长图 3936px → **2 页**，
+  「文件传输助手」→ 翻页截图 → 拼接切页端到端跑通。日期区间 11-16~11-27：2 张原始截图 → 长图 3936px → **2 页**，
   质量检查通过（最长相同行段 27 行）；更大区间 11-10~11-27：10 张原始截图 → 重建 8 页，但相邻页检测到 462 行
   跨 2 个消息块的重复内容（该会话含多张相同/相似图片消息，属对齐歧义），按质量门自动回退为 10 张原始截图并告警。
 - 录屏转截图：网页版样片 `input.mp4`（720×1584，23.8s）→ **124 页**（网页版 129 页，-3.9%），内容总高 160234px，
   页间零重叠；模拟器为软件解码，端到端 679.5s，桌面 Chrome 网页版约 49s。
   旗舰真机（硬件解码）预计 30~60s，与网页版同量级甚至更快，待真机实测确认。
-- 单元测试：JVM 单测 58 个（拼接规划/页级 seam/配对码解析/录屏数学/真机配对截图解析）全绿。
+- 单元测试：JVM 单测 66 个（拼接规划/页级 seam/全局单调性校验/配对码解析/录屏数学/真机配对截图解析）全绿。
 
 ## 已知限制
 
 - 真机自动配对需要开启一次「自动配对助手」（系统无障碍权限，只读取设置界面文字、不上传）。ColorOS/澎湃等系统
   切走应用即关闭配对弹窗，因此截图识别方案在真机上不可用；不想开无障碍时可用手动输入配对码 + 配对端口。
 - 录屏方案要求录屏期间聊天列表持续向上滚动；没有滚动或滚动过快（丢帧段过多）时质量门会提示。
-- 真实微信聊天里出现重复图片/长图消息时，拼接对齐可能歧义并触发 seam 回退（输出带重叠原始截图 + 告警），不会丢图。
+- 真实微信聊天里出现重复图片/长图消息时，拼接对齐可能歧义并触发 seam 回退（输出带重叠原始截图 + 告警），不会丢图；
+  拼接后的全局单调性校验也会拒绝「位移折返/步长异常」的结果并回退原始截图，不会输出内容错位的长图。
 
 ## 目录结构
 
@@ -65,6 +72,12 @@ website/               官网静态站点（无外部 CDN，系统字体 + 内�
   app.js
   favicon.svg
   version.json         版本信息模板（发布时由 release_bt.py 写入服务器）
+record-toolbox/        Windows 桌面版「笔录工具箱」（Python + WebView2 + 原生前端）
+  app/                 Python 后端（HTTP 服务、ADB 客户端、导出 API）
+  web/                 前端（iOS 风格界面 + 拼接引擎 + 录屏/截图方案）
+  docs/                契约、界面截图
+  tests/               拼接引擎 Node 单测（29 个）
+  tools/               图标生成、打包、E2E（Edge CDP）
 tools/
   release_bt.py         发布 APK + version.json 到宝塔服务器（分片上传 + 公网校验）
   deploy_site_bt.py     部署 website/ 静态文件到服务器
@@ -89,8 +102,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\agent_build.ps1 -Task 
 
 ```bash
 python tools/release_bt.py \
-  --apk wechat-shots-android/dist/wechat-shots-1.1.2-release.apk \
-  --version 1.1.2 --code 5 \
+  --apk wechat-shots-android/dist/wechat-shots-1.1.3-release.apk \
+  --version 1.1.3 --code 6 \
   --notes "新增 xxx
 修复 yyy"
 ```

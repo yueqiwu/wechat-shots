@@ -1,0 +1,216 @@
+{
+  "pages": [
+    {
+      "route": "home",
+      "name": "01-home",
+      "ready": true,
+      "state": {
+        "page": "home",
+        "ready": true,
+        "theme": "light",
+        "devices": 1,
+        "activeSerial": "emulator-5554",
+        "connected": true,
+        "adb": {
+          "connected": true,
+          "running": false,
+          "processing": false,
+          "shots": 0,
+          "phase": "",
+          "progress": 0,
+          "serial": "emulator-5554",
+          "model": "sdk gphone64 x86 64",
+          "deviceCount": 1
+        },
+        "video": {
+          "running": false,
+          "processing": false,
+          "phase": "",
+          "progress": 0,
+          "pages": 0
+        }
+      },
+      "layout": {
+        "page": "home",
+        "innerWidth": 1200,
+        "innerHeight": 840,
+        "screenHScroll": 0,
+        "docHScroll": 0,
+        "bodyRight": 1170,
+        "cards": 1,
+        "text": "全程本机处理 · 图片不会上传 导出聊天记录 把微信聊天记录整理成清晰、连续的截图长图。自动去重分页，直接保存到电脑。 推荐 手机截图导出 连接手机自动滚动截图，相邻截图保留约 10% 重叠，输出时自动去重。 USB 调试 无线调试 自"
+      }
+    },
+    {
+      "route": "video",
+      "name": "04-video",
+      "ready": true,
+      "state": {
+        "page": "video",
+        "ready": true,
+        "theme": "light",
+        "devices": 1,
+        "activeSerial": "emulator-5554",
+        "connected": true,
+        "adb": {
+          "connected": true,
+          "running": false,
+          "processing": false,
+          "shots": 0,
+          "phase": "",
+          "progress": 0,
+          "serial": "emulator-5554",
+          "model": "sdk gphone64 x86 64",
+          "deviceCount": 1
+        },
+        "video": {
+          "running": false,
+          "processing": false,
+          "phase": "",
+          "progress": 0,
+          "pages": 0,
+          "hasVideo": false,
+          "saved": false,
+          "error": ""
+        }
+      },
+      "layout": {
+        "page": "video",
+        "innerWidth": 1200,
+        "innerHeight": 840,
+        "screenHScroll": 0,
+        "docHScroll": 0,
+        "bodyRight": 1170,
+        "cards": 2,
+        "text": "录屏转截图 选择一段手机录屏，自动拼成聊天记录长截图并分页保存。 选择手机录屏文件 支持 MP4、MOV 等常见格式。若无法预览，请先把录屏转成 MP4（H.264）后重试。 选择录屏 录制建议 按下面的方式录制，拼接出来的分页会更完"
+      }
+    },
+    {
+      "route": "records",
+      "name": "05-records",
+      "ready": true,
+      "state": {
+        "page": "records",
+        "ready": true,
+        "theme": "light",
+        "devices": 1,
+        "activeSerial": "emulator-5554",
+        "connected": true,
+        "adb": {
+          "connected": true,
+          "running": false,
+          "processing": false,
+          "shots": 0,
+          "phase": "",
+          "progress": 0,
+          "serial": "emulator-5554",
+          "model": "sdk gphone64 x86 64",
+          "deviceCount": 1
+        },
+        "video": {
+          "running": false,
+          "processing": false,
+          "phase": "",
+          "progress": 0,
+          "pages": 0
+        }
+      },
+      "layout": {
+        "page": "records",
+        "innerWidth": 1200,
+        "innerHeight": 840,
+        "screenHScroll": 0,
+        "docHScroll": 0,
+        "bodyRight": 1170,
+        "cards": 1,
+        "text": "导出记录 共 1 条记录，保存在本机浏览器存储中。 清空记录 录屏转截图_20261127_184322 录屏转截图 67 页 · 2026-11-27 18:43 C:\\Users\\Administrator\\AppData\\Loca"
+      }
+    },
+    {
+      "route": "settings",
+      "name": "06-settings",
+      "ready": true,
+      "state": {
+        "page": "settings",
+        "ready": true,
+        "theme": "light",
+        "devices": 1,
+        "activeSerial": "emulator-5554",
+        "connected": true,
+        "adb": {
+          "connected": true,
+          "running": false,
+          "processing": false,
+          "shots": 0,
+          "phase": "",
+          "progress": 0,
+          "serial": "emulator-5554",
+          "model": "sdk gphone64 x86 64",
+          "deviceCount": 1
+        },
+        "video": {
+          "running": false,
+          "processing": false,
+          "phase": "",
+          "progress": 0,
+          "pages": 0
+        }
+      },
+      "layout": {
+        "page": "settings",
+        "innerWidth": 1200,
+        "innerHeight": 840,
+        "screenHScroll": 0,
+        "docHScroll": 0,
+        "bodyRight": 1170,
+        "cards": 5,
+        "text": "设置 调整连接方式、导出位置和外观偏好，修改会立即保存。 手机连接 「手机截图导出」通过手机系统的 USB 调试连接，程序会自动查找调试组件。 调试组件路径 填写调试组件的完整路径；留空时程序会自动查找。 自动检测 保存 调试组件可"
+      }
+    }
+  ],
+  "errors": [],
+  "checks": [
+    {
+      "route": "home",
+      "missing": []
+    },
+    {
+      "route": "home→adb",
+      "clicked": "adb"
+    },
+    {
+      "route": "adb",
+      "missing": []
+    },
+    {
+      "route": "adb-export",
+      "missing": []
+    },
+    {
+      "route": "adb-export",
+      "text": "手机截图导出 已连接 sdk gphone64 x86 64，可以开始导出。 连接设备 导出截图 确认画面 点击刷新预览，确认手机停留在要导出的聊天记录页面。 刷新预览 1080 × 2400 · 截图耗时 157 毫秒 导出选项 截图之间保留约 10% 重叠，输出时自动去重，保证内容连续不重复。 聊天对象（可选） 留空时会生成「聊天记录_日期时间」文件夹。 结束条件 自动判断：连续两屏内容几乎相同就停止；手动：由你点停止。 自动判断到顶 手动停止 同时打包成 ZIP 保存时额外生成一个压缩包，方便发送。 自动裁掉状态栏与输入框 可在「设置」中修改，默认开启。 开始自动截图 程序会从最新消息开始，自动向下滑动截取更早的聊天记录，然后自动拼接去重。 1 打开微信聊天窗口 2 停留在最新消息 3 导出期间不要锁屏 开始导出 导出过程中请保持手机亮屏，不要锁屏或操作手机；一屏大约需"
+    },
+    {
+      "route": "video",
+      "missing": []
+    },
+    {
+      "route": "settings",
+      "missing": []
+    },
+    {
+      "route": "dark",
+      "clicked": true,
+      "darkState": {
+        "theme": "dark",
+        "bg": "rgb(0, 0, 0)"
+      }
+    },
+    {
+      "route": "log.write",
+      "probe": {
+        "ok": true
+      }
+    }
+  ]
+}
