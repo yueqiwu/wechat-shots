@@ -432,6 +432,12 @@ def main() -> int:
     url = f"http://127.0.0.1:{port}/?e2e=1"
     log(f"服务端口 {port}")
 
+    # 页面启动时读取设置；一定要在打开页面前写好输出目录，否则「保存」会落到旧目录
+    try:
+        post(f"http://127.0.0.1:{port}/api/settings.save", {"settings": {"output_dir": out_dir}})
+    except Exception as exc:  # noqa: BLE001
+        log(f"settings.save 失败（忽略）：{exc}")
+
     edge = find_edge()
     import tempfile
 

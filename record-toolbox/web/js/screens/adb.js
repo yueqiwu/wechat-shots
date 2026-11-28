@@ -22,10 +22,14 @@ const CHAT_BOTTOM_RATIO = 0.10; // 预估输入框高度（仅用于粗略统计
    起点落进标题栏（不可滚动区域）时整段滑动会被系统忽略、页面纹丝不动。 */
 const SWIPE_START_RATIO = 0.14;    // 手势起点（状态栏 + 标题栏以下）
 const SWIPE_BOTTOM_RATIO = 0.12;   // 手势终点距屏幕底部的安全距离（输入框区域）
-const SWIPE_STEP_RATIO = 0.85;     // 单次滑动覆盖聊天区高度的比例（约 15% 重叠）
+const SWIPE_STEP_RATIO = 0.62;     // 单次滑动覆盖聊天区高度的初始比例（约 38% 重叠，之后按实测自动调整）
+const TARGET_OVERLAP_RATIO = 0.3;  // 自适应目标：相邻截图保留约 30% 重叠
+const MIN_TRAVEL_RATIO = 0.35;     // 自适应滑动比例下限
+const MAX_TRAVEL_RATIO = 0.9;      // 自适应滑动比例上限
+const MIN_SCROLL_NATIVE_RATIO = 0.05; // 位移小于聊天区高度的 5% 视为「没有滚动」
 const SWIPE_RETRY_START_RATIO = 0.3; // 重试时换更靠下的起点，避开任何标题栏
-const SWIPE_DURATION = 900;        // 常规滑动时长（越慢越不容易丢帧）
-const SWIPE_SETTLE = 800;          // 滑动后固定等待，等页面停稳再截图
+const SWIPE_DURATION = 1100;       // 常规滑动时长（慢滑减少惯性导致的位移忽大忽小）
+const SWIPE_SETTLE = 1200;         // 滑动后等待页面停稳（真机惯性大，800ms 常截到还在滑的画面）
 const SWIPE_RETRY_DURATION = 1100; // 「未滚动」时换更慢的滑动重试
 const SAME_SCREEN_RETRIES = 2;     // 「未滚动」最多重试次数
 const SAMPLE_STEP = 48;            // 轻量比对采样间隔（每 48 行/列取一点）
@@ -183,17 +187,19 @@ function compareSignatures(prev, current) {
   const same = meanDiff < 1.6 && bigCount / span < 0.02;
 
   // 估计位移：手指向下滑后，旧内容整体下移 d 行 → prev[y] ≈ current[y + d]。
+  // 位移越大，能参与比较的行越少：要求最少 8 行、扫描到 0.92h，否则大位移会被当成 0，
+  // 自适应滑动距离就会越调越离谱。
   let bestShift = 0;
   let bestScore = Infinity;
-  const maxShift = Math.floor(prev.height * 0.85);
+  const maxShift = Math.floor(prev.height * 0.92);
   for (let shift = 0; shift <= maxShift; shift += 1) {
     let score = 0;
     let count = 0;
-    for (let y = start; y + shift < end; y += 3) {
+    for (let y = start; y + shift < end; y += 2) {
       score += Math.abs(prev.rows[y] - current.rows[y + shift]);
       count += 1;
     }
-    if (count < 20) continue;
+    if (count < 8) continue;
     const averageScore = score / count;
     if (averageScore < bestScore) {
       bestScore = averageScore;
@@ -912,15 +918,18 @@ export function mount(root, ctx) {
       const chatBottom = Math.round(height * SWIPE_BOTTOM_RATIO);
       const chatHeight = Math.max(200, height - chatTop - chatBottom);
       capture.chatHeight = chatHeight;
-      const step = Math.round(chatHeight * SWIPE_STEP_RATIO);
       const x = Math.round(width / 2);
+      const chatNative = chatHeight;
+      let travelRatio = SWIPE_STEP_RATIO;
+      const swipeSpan = () => Math.max(120, Math.round(chatHeight * travelRatio));
       const y1 = chatTop;
-      const y2 = Math.min(height - chatBottom, y1 + step);
       /* 第一次重试换更靠下的起点：有些机型标题栏/搜索栏比预估更高。 */
       const retryY1 = Math.round(height * SWIPE_RETRY_START_RATIO);
-      const retryY2 = Math.min(height - chatBottom, retryY1 + step);
       updateRunningPhase(`开始截图 · 手机分辨率 ${width} × ${height}`);
-      appendRunLog(`开始截图：手指向下滑动 ${y2 - y1} px（约占聊天区 ${Math.round(SWIPE_STEP_RATIO * 100)}%，约 ${Math.max(0, Math.round((1 - (y2 - y1) / chatHeight) * 100))}% 重叠）`);
+      appendRunLog(
+        `开始截图：先按聊天区的 ${Math.round(travelRatio * 100)}% 向下滑动，目标重叠约 ${Math.round(TARGET_OVERLAP_RATIO * 100)}%；` +
+          '之后会根据上一屏的实际位移自动调快/调慢滑动距离。',
+      );
 
       const first = await api('screencap', { serial, sid: sid || undefined, kind: 'adb' });
       if (cancelled) return;
@@ -945,18 +954,22 @@ export function mount(root, ctx) {
         let shot = null;
         let signature = null;
         let scrolled = false;
-        for (let attempt = 0; attempt <= SAME_SCREEN_RETRIES; attempt += 1) {
+        let testScrolled = null;
+        for (let attempt = 0; attempt <= SAME_SCREEN_RETRIES + 1; attempt += 1) {
           const duration = attempt === 0 ? SWIPE_DURATION : SWIPE_RETRY_DURATION;
           const useRetryStart = attempt === 1;
+          const span = swipeSpan();
+          const startY = useRetryStart ? retryY1 : y1;
+          const endY = Math.min(height - chatBottom, startY + span);
           await api('swipe', {
             serial,
             x1: x,
-            y1: useRetryStart ? retryY1 : y1,
+            y1: startY,
             x2: x,
-            y2: useRetryStart ? retryY2 : y2,
+            y2: endY,
             duration,
           }, { silent: true });
-          await sleep(SWIPE_SETTLE);
+          await sleep(SWIPE_SETTLE + (attempt > 0 ? 400 : 0));
           if (stopRequested || cancelled) break;
           const response = await api('screencap', { serial, sid, kind: 'adb' }, { silent: true });
           if (cancelled) break;
@@ -964,12 +977,32 @@ export function mount(root, ctx) {
           shot = response.shot;
           signature = await frameSignature(sid, shot);
           if (cancelled) break;
-          if (!sameScreen(previous, signature)) {
+          /* 真机惯性大：截图可能截在动画中间。400ms 后再截一次比对，
+             若画面还在变，说明上一张没停稳，改用后一张。 */
+          await sleep(400);
+          const still = await api('screencap', { serial, sid, kind: 'adb' }, { silent: true });
+          if (cancelled) break;
+          adoptSerial(still);
+          const stillSig = await frameSignature(sid, still.shot);
+          if (cancelled) break;
+          const drift = compareSignatures(signature, stillSig);
+          if (drift.meanDiff > 0.8 || drift.shiftNative > 12) {
+            shot = still.shot;
+            signature = stillSig;
+            appendRunLog('页面还在滑动，已多等一会儿再截图。');
+          }
+          const candidate = compareSignatures(previous, signature);
+          const movedEnough = !sameScreen(previous, signature) && candidate.shiftNative >= chatNative * MIN_SCROLL_NATIVE_RATIO;
+          if (movedEnough) {
             scrolled = true;
+            testScrolled = candidate;
             break;
           }
-          if (attempt < SAME_SCREEN_RETRIES) {
-            appendRunLog(`画面没有变化（未滚动），第 ${attempt + 1} 次重试：改用 ${SWIPE_RETRY_DURATION}ms 慢速滑动…`);
+          if (attempt < SAME_SCREEN_RETRIES + 1) {
+            appendRunLog(
+              `这一屏几乎没有移动（位移约 ${Math.round(candidate.shiftNative)} px），` +
+                `第 ${attempt + 1} 次重试：放慢滑动并延长等待…`,
+            );
           }
         }
         if (stopRequested || cancelled) break;
@@ -979,7 +1012,21 @@ export function mount(root, ctx) {
           break;
         }
 
-        const compared = compareSignatures(previous, signature);
+        const compared = testScrolled || compareSignatures(previous, signature);
+        /* 位移太小说明这一屏没有新内容（重复截图），不要送进拼接分析。 */
+        const minMove = chatNative * 0.04;
+        if (compared.shiftNative < minMove) {
+          stagnant += 1;
+          appendRunLog(
+            `这一屏几乎没有新内容（位移约 ${Math.round(compared.shiftNative)} px），已跳过。`,
+          );
+          if (stagnant >= 3) {
+            capture.stopReason = '连续多屏没有新内容，已自动停止（可能已到聊天记录顶部）';
+            appendRunLog('连续多屏没有新内容，判定已到达聊天记录顶部，自动停止。');
+            break;
+          }
+          continue;
+        }
         shots.push(shot);
         capture.lastShot = shot;
         previous = signature;
@@ -987,8 +1034,22 @@ export function mount(root, ctx) {
           capture.overlaps.push(compared.overlap);
           capture.lastOverlap = compared.overlap;
         }
-        if (compared.shiftNative < 6) stagnant += 1;
-        else stagnant = 0;
+        stagnant = 0;
+
+        /* 自适应步长：按上一屏实测位移把「手指滑动距离」拉向目标重叠。 */
+        const targetStep = chatNative * (1 - TARGET_OVERLAP_RATIO);
+        const measured = Math.max(1, compared.shiftNative);
+        const nextRatio = Math.min(
+          MAX_TRAVEL_RATIO,
+          Math.max(MIN_TRAVEL_RATIO, travelRatio * (targetStep / measured)),
+        );
+        if (Math.abs(nextRatio - travelRatio) > 0.04) {
+          appendRunLog(
+            `实测位移约 ${Math.round(measured)} px（重叠约 ${(compared.overlap * 100).toFixed(0)}%），` +
+              `滑动距离自动调整为聊天区的 ${Math.round(nextRatio * 100)}%。`,
+          );
+        }
+        travelRatio = nextRatio;
         if (exportOpts.stopMode === 'auto' && stagnant >= 3) {
           capture.stopReason = '连续多屏没有出现新内容，已自动停止';
           appendRunLog('多屏没有新内容，自动停止。');

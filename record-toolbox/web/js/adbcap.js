@@ -12,6 +12,7 @@ import {
   drawPageOps,
   grayFromRGBA,
   renderPages,
+  trackOffsets,
 } from './stitch.js';
 
 // 方便 UI 只 import 本模块也能统一 catch 拼接错误
@@ -280,6 +281,36 @@ const OVERLAP_MSG = '截图重叠不足或内容重复，无法拼接。请放�
  * shots 按截图顺序（最新→最旧）。返回 AnalysisResult，并附加 analysis.crop = {topPx,botPx}|null。
  * 失败抛 StitchError（UI 显示「重试」引导）。
  */
+/** 真机 input swipe 有惯性：偶尔会把一屏截在滚动/回弹过程中，相邻位移反向或匹配失败，
+ *  这种截图会让后面的全局单调校验直接失败。这里先迭代剔除「位移非正向或可信度太低」的截图，
+ *  再对剩余截图重新跟踪；最多剔除 maxSanitizeDrop 张（默认 6），剩余不足 3 张时保留原结果。 */
+export function sanitizeStaticAnalysis(analysis, opts = {}) {
+  const maxDrop = opts.maxSanitizeDrop == null ? 6 : Number(opts.maxSanitizeDrop);
+  const minOverlap = opts.minOverlap == null ? 0.05 : opts.minOverlap;
+  const bandH = analysis.band ? analysis.band.h : analysis.ah;
+  let frames = analysis.frames;
+  let track = analysis.track;
+  let removed = 0;
+  for (let round = 0; round < maxDrop; round += 1) {
+    const steps = (track && track.step) || [];
+    const ncc = (track && track.ncc) || [];
+    let bad = -1;
+    for (let i = 1; i < steps.length; i += 1) {
+      const invalid = !(steps[i] > 0.5) || (ncc[i] != null && ncc[i] < 0.6);
+      if (invalid) {
+        bad = i;
+        break;
+      }
+    }
+    if (bad < 0) break;
+    frames = frames.slice(0, bad).concat(frames.slice(bad + 1));
+    removed += 1;
+    if (frames.length < 3) break;
+    track = trackOffsets(frames, bandH, { minOverlap, maxStepRatio: 1.0 });
+  }
+  return { frames, track, removed };
+}
+
 export async function analyzeShots(sid, shots, options = {}, onProgress) {
   // 容错：允许 analyzeShots(sid, shots, onProgress) 的调用形态
   if (typeof options === 'function' && onProgress === undefined) {
@@ -300,6 +331,13 @@ export async function analyzeShots(sid, shots, options = {}, onProgress) {
     },
     onProgress,
   );
+  // 先剔除惯性/回弹阶段截到的坏屏（否则后面的全局单调校验会整单失败）
+  const sanitized = sanitizeStaticAnalysis(analysis, opts);
+  if (sanitized.removed > 0) {
+    analysis.frames = sanitized.frames;
+    analysis.track = sanitized.track;
+    analysis.stats = { ...(analysis.stats || {}), removedShots: sanitized.removed };
+  }
   const pairs = Math.max(1, analysis.frames.length - 1);
   const badRatio = analysis.track.bad.length / pairs;
   const maxBadRatio = opts.maxBadRatio == null ? 0.3 : Number(opts.maxBadRatio);
