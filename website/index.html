@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>笔录工具箱 · 微信聊天记录导出（Windows 版）</title>
-<meta name="description" content="笔录工具箱：Windows 电脑上把微信聊天记录导出成连续长截图 / 分页截图。USB 或无线 ADB 自动滚屏截图，或直接拖入手机录屏自动转截图。不重叠、去重、全程本地处理，低配电脑也能跑。">
+<title>笔录工具箱 · 微信聊天记录导出 / 交易明细格式化（Windows 版）</title>
+<meta name="description" content="笔录工具箱：Windows 电脑上把微信聊天记录导出成连续长截图 / 分页截图，也能把微信支付 / 支付宝交易明细整理成 Word 文档。USB 或无线 ADB 自动滚屏截图，或直接拖入手机录屏自动转截图，全程本地处理，低配电脑也能跑。">
 <meta name="theme-color" content="#f5f6fa">
-<meta property="og:title" content="笔录工具箱 · 微信聊天记录导出（Windows 版）">
-<meta property="og:description" content="Windows 桌面工具：自动滚屏截图或录屏转截图，去重拼接成完整长图。">
+<meta property="og:title" content="笔录工具箱 · 聊天记录导出 / 交易明细格式化（Windows 版）">
+<meta property="og:description" content="Windows 桌面工具：自动滚屏截图或录屏转截图，去重拼接成完整长图；微信/支付宝交易明细 PDF 一键整理成 Word。">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
@@ -40,6 +40,7 @@
     <nav class="nav-links" aria-label="页面导航">
       <a href="#download">下载</a>
       <a href="#solutions">两种方案</a>
+      <a href="#bill">交易明细</a>
       <a href="#features">功能亮点</a>
       <a href="#install">使用说明</a>
       <a href="#faq">常见问题</a>
@@ -49,7 +50,7 @@
         <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"/></g></svg>
         <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20.2 14.4A8.6 8.6 0 0 1 9.6 3.8 8.8 8.8 0 1 0 20.2 14.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       </button>
-      <a class="btn btn-small btn-primary" href="record-toolbox-1.0.3-win64.zip">下载 Windows 版</a>
+      <a class="btn btn-small btn-primary" href="record-toolbox-1.0.4-win64.zip" data-win-download>下载 Windows 版</a>
     </div>
   </div>
 </header>
@@ -61,7 +62,7 @@
       <div class="hero-copy">
         <div class="badge reveal" data-reveal>
           <span class="dot"></span>
-          <span><span data-win-version>1.0.3</span> · Windows 10 / 11</span>
+          <span><span data-win-version>1.0.4</span> · Windows 10 / 11</span>
         </div>
         <h1 class="reveal" data-reveal>
           把聊天记录，<br>
@@ -69,13 +70,13 @@
         </h1>
         <p class="lead reveal" data-reveal>
           「笔录工具箱」在电脑上把微信聊天记录导出成连续长图或分页截图：
-          手机连电脑后用 USB 调试（也支持无线）自动滚屏截图，或者直接把手机录屏拖进窗口转成截图。
-          全程本地处理，不上传任何聊天内容，低配电脑也能跑。
+          手机连电脑后用 USB 调试（也支持无线）自动滚屏截图，或者直接把手机录屏拖进窗口转成截图；
+          还能把微信支付 / 支付宝交易明细整理成可直接提交的 Word 文档。全程本地处理，不上传任何聊天内容。
         </p>
         <div class="hero-cta reveal" data-reveal>
-          <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">
+          <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.4-win64.zip" data-win-download>
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            下载 Windows 版<span class="btn-sub">约 22 MB</span>
+            下载 Windows 版<span class="btn-sub" data-win-size>约 23 MB</span>
           </a>
           <a class="btn btn-ghost btn-lg" href="#solutions">先看看怎么用</a>
         </div>
@@ -85,6 +86,7 @@
         <ul class="hero-points reveal" data-reveal>
           <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>解压即用，无需安装</li>
           <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>截图自动拼接去重</li>
+          <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>交易明细一键成文</li>
           <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>纯本地离线可用</li>
         </ul>
       </div>
@@ -143,7 +145,7 @@
       <div class="sec-head reveal" data-reveal>
         <p class="eyebrow">两种方案 · 按场景选择</p>
         <h2>想怎么导出，都可以</h2>
-        <p class="sec-desc">「笔录工具箱」在电脑上提供两种导出方式：USB 调试连手机自动滚屏截图，或把手机录屏拖进窗口自动转截图。两种方式输出结果一致：不重叠、不重复、顺序完整。</p>
+        <p class="sec-desc">「笔录工具箱」在电脑上提供两种截图导出方式：USB 调试连手机自动滚屏截图，或把手机录屏拖进窗口自动转截图。两种方式输出结果一致：不重叠、不重复、顺序完整。</p>
       </div>
 
       <div class="solutions">
@@ -244,6 +246,39 @@
     </div>
   </section>
 
+  <!-- ========================= 交易明细 ========================= -->
+  <section class="section" id="bill">
+    <div class="container">
+      <div class="sec-head reveal" data-reveal>
+        <p class="eyebrow">新增功能 · 交易明细格式化</p>
+        <h2>交易明细，一键整理成 Word</h2>
+        <p class="sec-desc">除了聊天截图，笔录工具箱也可以把「微信支付交易明细证明」和「支付宝交易明细证明」整理成规范文字：导入 PDF、预览删掉不需要的条目，按照模板导出「支出明细」「收入明细」两个 Word 文档，直接打印或提交。</p>
+      </div>
+      <div class="features">
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M8 4h11l5 5v19H8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M19 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 15h8M12 19h8M12 23h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <h3>导入两份 PDF</h3>
+          <p>把微信、支付宝导出的交易明细证明 PDF 直接拖进窗口，自动识别平台、逐条解析交易时间、金额、对方与交易单号，不需要手工抄。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="6" y="6" width="20" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="m11 16.2 3.4 3.3 6.6-6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>预览勾选</h3>
+          <p>解析结果先预览：可以搜索、按平台筛选、勾选删除不需要的条目；「不计收支」的行不会进入收入或支出文档。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M6 8h9v7H6zM17 8h9v7h-9zM6 18h9v7H6zM17 18h9v7h-9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+          <h3>收入 / 支出分开</h3>
+          <p>分别导出「支出明细」和「收入明细」两个 Word 文档，各自带笔数与合计金额；默认文案对齐常见证明材料写法，时间格式为「2026年1月2日09时40分03秒」。</p>
+        </article>
+        <article class="card feature reveal" data-reveal>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 5v14m0 0 4.5-4.5M16 19l-4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 24h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <h3>自定义模板</h3>
+          <p>支持下载默认模板，改好措辞后重新上传（模板里保留一行含 {{序号}} 的明细行即可），随时可恢复默认；所有解析与导出都在本机完成。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <!-- ========================= 使用流程 ========================= -->
   <section class="section" id="how">
     <div class="container">
@@ -279,9 +314,9 @@
         <div class="dl-left">
           <p class="eyebrow" style="margin:0 0 8px">Windows 电脑版</p>
           <h2>下载笔录工具箱</h2>
-          <p>当前版本 <b data-win-version>1.0.3</b> · Windows 10 / 11 · 约 22 MB · 解压即用</p>
+          <p>当前版本 <b data-win-version>1.0.4</b> · Windows 10 / 11 · <span data-win-size>约 23 MB</span> · 解压即用</p>
           <div class="dl-buttons">
-            <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">
+            <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.4-win64.zip" data-win-download>
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
               下载 Windows 版
             </a>
@@ -293,13 +328,13 @@
           <div class="version-card">
             <div class="vc-head">
               <span class="vc-badge">最新版本</span>
-              <span class="vc-ver" data-win-version>1.0.3</span>
+              <span class="vc-ver" data-win-version>1.0.4</span>
             </div>
             <ul class="vc-notes" id="vcNotes">
-              <li>截图张数不再限制，长聊天也能一次导到底</li>
-              <li>新增自动更新：启动自动检查，可一键下载替换并重新打开</li>
-              <li>录屏转截图支持把视频直接拖进窗口导入</li>
-              <li>保留真机截图去重、坏屏剔除、iOS 风格界面等全部功能</li>
+              <li>新增「交易明细格式化」：导入微信 / 支付宝 PDF，预览后导出两个 Word</li>
+              <li>支持下载 / 上传自定义模板，收入与支出分别成文</li>
+              <li>首页新增交易明细入口；修复自动更新在部分机器上不生效的问题</li>
+              <li>保留截图去重、录屏拖拽、取消截图张数上限等全部功能</li>
             </ul>
             <p class="vc-date">发布于 <span id="pubDate">2026-11-29</span></p>
           </div>
@@ -313,20 +348,21 @@
     <div class="container reveal" data-reveal">
       <p class="eyebrow">Windows 电脑版</p>
       <h2>在电脑上导出：笔录工具箱</h2>
-      <p class="sec-desc">同样的聊天记录导出能力，桌面端叫「笔录工具箱」。手机连电脑后用 USB 调试（也可以先 USB 再切无线）自动滚屏截图，或者直接把手机录屏拖进窗口转截图。全程本地处理、不上传，低配电脑也能跑（Python + WebView2，没有 Electron 那种内存开销）。</p>
+      <p class="sec-desc">同样的聊天记录导出能力，桌面端叫「笔录工具箱」。手机连电脑后用 USB 调试（也可以先 USB 再切无线）自动滚屏截图，或者直接把手机录屏拖进窗口转截图；再往里一步，还能把微信支付 / 支付宝交易明细整理成 Word。全程本地处理、不上传，低配电脑也能跑（Python + WebView2，没有 Electron 那种内存开销）。</p>
       <ul class="hero-points" style="justify-content:center;margin:18px 0 26px">
         <li>USB 调试 / 无线 ADB 自动滚屏截图，约 10%～25% 重叠，自动去重分页，张数不设上限</li>
         <li>录屏可拖拽导入，自动抽帧、重建长图、切页导出 + ZIP</li>
+        <li>交易明细：导入 PDF → 预览勾选 → 导出收入 / 支出两个 Word，支持自定义模板</li>
         <li>内置 adb 与 iOS 风格界面，解压即用，无需安装 Python；支持应用内自动更新</li>
       </ul>
       <div class="dl-buttons" style="justify-content:center">
-        <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">
+        <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.4-win64.zip" data-win-download>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          下载 Windows 版（约 22 MB）
+          下载 Windows 版（<span data-win-size>约 23 MB</span>）
         </a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/yueqiwu/wechat-shots/tree/main/record-toolbox">源码与说明</a>
       </div>
-      <p class="hero-sub" style="text-align:center;margin-top:14px">Windows 10 / 11 · 解压后双击「笔录工具箱.exe」即可运行，首次使用按界面引导开启 USB 调试<br>1.0.3 新增自动更新、录屏拖拽导入，并取消截图张数上限</p>
+      <p class="hero-sub" style="text-align:center;margin-top:14px">Windows 10 / 11 · 解压后双击「笔录工具箱.exe」即可运行，首次使用按界面引导开启 USB 调试<br>1.0.4 新增交易明细格式化，并修复自动更新在部分机器上不生效的问题</p>
     </div>
   </section>
 
@@ -344,7 +380,7 @@
             <span class="il-no">1</span>
             <div>
               <h3>下载并解压</h3>
-              <p>下载 <code>record-toolbox-1.0.3-win64.zip</code>，解压到任意目录（路径尽量不要带特殊符号），双击目录里的「笔录工具箱.exe」。</p>
+              <p>下载 <code>record-toolbox-1.0.4-win64.zip</code>，解压到任意目录（路径尽量不要带特殊符号），双击目录里的「笔录工具箱.exe」。</p>
             </div>
           </li>
           <li>
@@ -366,7 +402,7 @@
           <h3>运行要求</h3>
           <ul>
             <li>系统版本：<b>Windows 10 / 11</b>（自带 WebView2 运行时）</li>
-            <li>安装包大小：<b>约 22 MB</b>，解压后约 44 MB</li>
+            <li>安装包大小：<b data-win-size>约 23 MB</b>，解压后约 44 MB</li>
             <li>无需安装 Python，无需单独下载 adb</li>
             <li>所有聊天数据在本机处理，不会上传</li>
           </ul>
@@ -423,8 +459,15 @@
             <p>1.0.2 起已按实测位移自适应调整滑动距离，并在截图后等待页面停稳、自动剔除坏屏，正常情况下不会再整单失败。如果仍遇到，请确认：微信保持在聊天页面、导出期间不要锁屏或手动滑动手机，并更新到最新版本。</p>
           </div>
         </details>
+<details class="reveal" data-reveal>
+          <summary>交易明细怎么整理成 Word？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>打开「交易明细格式化」页，把微信支付交易明细证明 PDF 和支付宝交易明细证明 PDF 分别拖进窗口（也可以一个个导入），工具会逐条解析。预览里可以搜索、按平台筛选、勾选删除不需要的条目，然后分别点「导出支出」「导出收入」生成两个 Word 文档。</p>
+            <p>默认模板对齐常见证明材料写法；如果想改措辞，可以下载模板、用 Word 改好后重新上传（保留含 {{序号}} 的明细行），随时能恢复默认模板。全部解析与导出都在本机完成。</p>
+          </div>
+        </details>
         <details class="reveal" data-reveal>
-          <summary>Android 版还能下载吗？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <summary>Android 版还能下载吗？<span class="faq-chev" aria-hidden="true"></span></summary><span class="faq-chev" aria-hidden="true"></span></summary>
           <div class="faq-body">
             <p>可以，本页仍提供 Android 版 APK（Android 11+，支持无线 ADB 与录屏两种方案）。后续会以 Windows 电脑版为主，Android 版可能停止更新，建议优先使用电脑版。</p>
           </div>
@@ -438,7 +481,7 @@
     <div class="container narrow center reveal" data-reveal>
       <h2>一页看完一段对话</h2>
       <p>下载笔录工具箱，在电脑上把散落的截图整理成完整长图。</p>
-      <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">下载 Windows 版 · <span data-win-version>v1.0.3</span></a>
+      <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.4-win64.zip" data-win-download>下载 Windows 版 · <span data-win-version>v1.0.4</span></a>
     </div>
   </section>
 </main>
@@ -451,7 +494,7 @@
       </span>
       <span>笔录工具箱</span>
     </div>
-    <p class="footer-note">Windows 10/11 · 本地处理 · 无需安装 · Android 版为旧版</p>
+    <p class="footer-note">Windows 10/11 · 聊天截图 + 交易明细 · 本地处理 · Android 版为旧版</p>
     <p class="footer-copy">© <span id="year">2026</span> 笔录工具箱 · <a href="version.json">version.json</a></p>
   </div>
 </footer>

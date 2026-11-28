@@ -1,5 +1,5 @@
 /**
- * screens/home.js —— 首页：两张方案卡 + USB 调试引导入口。
+ * screens/home.js —— 首页：三张功能卡 + USB 调试引导入口。
  */
 import { h, icon, dialog, button, stepList, chips } from '../ui.js';
 
@@ -44,8 +44,8 @@ export function mount(root, ctx) {
   const screen = h('div', { class: 'home' },
     h('section', { class: 'hero' },
       h('div', { class: 'hero-eyebrow' }, icon('shield', 14), '全程本机处理 · 图片不会上传'),
-      h('h1', { class: 'hero-title' }, '导出聊天记录'),
-      h('p', { class: 'hero-sub' }, '把微信聊天记录整理成清晰、连续的截图长图。自动去重分页，直接保存到电脑。')),
+      h('h1', { class: 'hero-title' }, '聊天记录与交易明细'),
+      h('p', { class: 'hero-sub' }, '把微信聊天记录导出成清晰、连续的长截图；也能把微信支付 / 支付宝交易明细整理成可直接提交的 Word 文档。')),
 
     h('section', { class: 'scheme-grid', 'aria-label': '选择导出方式' },
       schemeCard({
@@ -66,6 +66,16 @@ export function mount(root, ctx) {
         tags: ['自动抽帧', '匀速滚动', '分页输出'],
         testid: 'home-card-video',
         onClick: () => ctx.navigate('video'),
+      }),
+      schemeCard({
+        tone: 'violet',
+        iconName: 'receipt',
+        title: '交易明细格式化',
+        desc: '导入微信支付 / 支付宝交易明细 PDF，预览勾选后按模板导出收入、支出两个 Word 文档。',
+        tags: ['PDF 导入', '预览勾选', '导出 Word'],
+        badge: '新功能',
+        testid: 'home-card-bill',
+        onClick: () => ctx.navigate('bill'),
       })),
 
     h('button', { class: 'guide-entry card', type: 'button', 'data-testid': 'home-usb-guide', onclick: () => openUsbGuide() },

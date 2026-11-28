@@ -125,6 +125,10 @@ const ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   key: '<circle cx="8" cy="15.5" r="4.2"/><path d="m11 12.5 8.4-8.4M16.6 6.9l2.4 2.4M14.2 9.3l2.2 2.2"/>',
   pixel: '<rect x="3.8" y="3.8" width="7" height="7" rx="1.4"/><rect x="13.2" y="3.8" width="7" height="7" rx="1.4"/><rect x="3.8" y="13.2" width="7" height="7" rx="1.4"/><path d="M16.7 13.2v7M13.2 16.7h7"/>',
+  receipt: '<path d="M6 3.4h8.2l3.8 3.8v13.4l-2.6-1.5-2.7 1.5-2.7-1.5-2.6 1.5V5.4a2 2 0 0 1 2-2Z"/><path d="M8.4 8.6h5.4M8.4 12h5.4M8.4 15.4h3.4"/>',
+  download: '<path d="M12 4.2v10.4"/><path d="M7.6 10.6 12 15l4.4-4.4"/><path d="M5 18.6h14"/>',
+  upload: '<path d="M12 19.8V9.4"/><path d="M7.6 13.4 12 9l4.4 4.4"/><path d="M5 4.6h14"/>',
+  doc: '<path d="M7 3.4h6.6L18 7.8v12.8H7Z"/><path d="M13.4 3.6v4.4H18"/><path d="M9.4 12.4h5.8M9.4 15.6h5.8"/>',
 };
 
 export function icon(name, size = 20, extraClass = '') {

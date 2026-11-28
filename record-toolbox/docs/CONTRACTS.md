@@ -82,6 +82,22 @@ python -m unittest discover -s tests -p "test_*.py"
 
 图片数据一律 `data:image/png;base64,...`；页面命名 `001.png`、`002.png`…（3 位补零）。
 
+### 交易明细格式化（bill）
+
+上传微信支付 / 支付宝「交易明细证明」PDF → 预览（可勾选删除）→ 按模板导出「支出明细」「收入明细」两个 DOCX。
+
+- `POST /api/upload_bill`：body 为 PDF 原始字节（**不是 JSON**），headers `X-Bill-Kind: wechat|alipay|template`、`X-File-Name: <URL 编码文件名>`；返回 `{ok,state}` 或 `{ok:false,error:"中文错误"}`。kind=template 时按文件名是否含「收入」判定收入/支出模板。
+- `bill.state`：`{ok,hasData,sources:[{kind,name,format,rows}],summary:{total,incomeCount,incomeAmount,expenseCount,expenseAmount,otherCount},rows:[...],templates:{income:{builtin,custom,customPath,updatedAt,placeholders},expense:{...}},outputDir}`；`rows[]` 含 `id,platform,time,direction(income|expense|other),amount,counterparty,orderId,merchantOrder,product,type,method,directionLabel`，按时间升序合并、跨平台（`id` 唯一，前端用它做勾选/删除）。
+- `bill.export`：`{directions:["expense","income"],excludeIds:[id...],dir?,noOpen?}` → `{ok,dir,files:[{direction,label,count,amount,path,name,skipped}],opened,template:"custom"|"builtin",message}`；「不计收支」不进入收入/支出文档。
+- `bill.clear` → `{ok,state}`；`bill.source.remove`：`{kind}` → `{ok,state}`。
+- `bill.template.download`：`{direction}` → `{ok,path,name}`（返回模板文件路径，前端提示位置）；`bill.template.open`：`{direction}` → `{ok,path}`；`bill.template.reset`：`{direction}` → `{ok,state}`。
+
+模板 DOCX 占位符（自定义模板必须保留一行含 `{{序号}}` 的明细行，否则上传会被拒绝）：
+
+- 汇总段：`{{笔数}}`、`{{总金额}}`、`{{开始日期}}`、`{{结束日期}}`、`{{平台简称}}`；
+- 明细行：`{{序号}}`、`{{时间}}`（形如 `2026年1月2日09时40分03秒`）、`{{时间日期}}`、`{{平台}}`、`{{平台简称}}`、`{{金额}}`、`{{交易对方}}`、`{{交易单号}}`、`{{商品说明}}`、`{{交易方式}}`、`{{交易类型}}`。
+- 收入/支出各一套模板；内置模板在 `assets/bill-templates/`，用户自定义模板存 `%LOCALAPPDATA%\RecordToolbox\bill-templates\`（优先于内置，可「恢复默认」）。
+
 ## JS 模块契约
 
 ### js/stitch.js —— 纯算法（无 DOM，可在 Node 中测试）

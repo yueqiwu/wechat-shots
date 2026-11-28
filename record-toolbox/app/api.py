@@ -19,6 +19,7 @@ from typing import Any
 
 from . import adb as adb_module
 from . import paths, settings
+from . import bill as bill_module
 from . import update as update_module
 
 log = logging.getLogger("record_toolbox.api")
@@ -421,6 +422,20 @@ def create_video_session(path: str, name: str, size: int | None = None) -> dict:
     }
 
 
+def upload_bill(path: str, name: str, kind: str) -> dict:
+    """上传一份交易明细 PDF 或自定义 DOCX 模板（server.py 落盘后调用这里）。"""
+    if not path or not os.path.isfile(path):
+        raise ValueError("上传文件不存在或已被移动")
+    kind = (kind or "").strip().lower()
+    if kind == "template":
+        direction = "income" if "收入" in (name or "") else "expense"
+        return {"ok": True, "kind": "template", "direction": direction,
+                "template": bill_module.install_custom_template(direction, path),
+                "state": bill_module.state()}
+    return {"ok": True, "kind": kind, "imported": bill_module.import_pdf(path, name, kind or None),
+            "state": bill_module.state()}
+
+
 def dispatch(action: str, payload: dict) -> dict:
     payload = payload or {}
     if action == "state":
@@ -478,6 +493,37 @@ def dispatch(action: str, payload: dict) -> dict:
         return update_module.apply(payload.get("manifestUrl") or None)
     if action == "update.state":
         return {"ok": True, "state": update_module.STATE}
+    if action == "bill.state":
+        return bill_module.state()
+    if action == "bill.clear":
+        bill_module.SESSION.clear()
+        return {"ok": True, "state": bill_module.state()}
+    if action == "bill.export":
+        return bill_module.export(payload)
+    if action == "bill.template.reset":
+        direction = payload.get("direction") or "expense"
+        return {"ok": True, "direction": direction,
+                "template": bill_module.reset_custom_template(direction),
+                "state": bill_module.state()}
+    if action == "bill.template.open":
+        folder = bill_module.custom_template_dir()
+        try:
+            os.startfile(folder)  # type: ignore[attr-defined]
+        except OSError:
+            pass
+        return {"ok": True, "path": folder}
+    if action == "bill.template.download":
+        direction = payload.get("direction") or "expense"
+        target_dir = bill_module._output_dir(payload)
+        path = bill_module.copy_builtin_template(direction, target_dir)
+        try:
+            os.startfile(os.path.dirname(path))  # type: ignore[attr-defined]
+        except OSError:
+            pass
+        return {"ok": True, "path": path}
+    if action == "bill.source.remove":
+        bill_module.SESSION.remove_source(payload.get("kind") or "")
+        return {"ok": True, "state": bill_module.state()}
     if action == "open_url":
         url = payload.get("url") or ""
         if url.startswith(("http://", "https://")):

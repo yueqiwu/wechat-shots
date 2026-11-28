@@ -25,6 +25,12 @@ $args = @(
   "--hidden-import", "clr",
   "--hidden-import", "webview.platforms.winforms",
   "--hidden-import", "webview.platforms.edgechromium",
+  # pypdf 的可选依赖（PIL 用于图像提取、cryptography/pycryptodome 用于加密 PDF）
+  # 本项目只解析未加密的交易明细 PDF，排除以减小安装包体积。
+  "--exclude-module", "PIL",
+  "--exclude-module", "cryptography",
+  "--exclude-module", "Crypto",
+  "--exclude-module", "bcrypt",
   "run.py"
 )
 & python @args

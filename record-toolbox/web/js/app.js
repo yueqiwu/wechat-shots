@@ -6,6 +6,7 @@ import { api, reportLog } from './api.js';
 import * as homeScreen from './screens/home.js';
 import * as adbScreen from './screens/adb.js';
 import * as videoScreen from './screens/videoScreen.js';
+import * as billScreen from './screens/billScreen.js';
 import * as recordsScreen from './screens/records.js';
 import * as settingsScreen from './screens/settings.js';
 import { checkForUpdates } from './updateUI.js';
@@ -17,6 +18,7 @@ const ROUTES = {
   home: { title: '笔录工具箱', module: homeScreen, tab: 'home' },
   adb: { title: '手机截图导出', module: adbScreen, push: true },
   video: { title: '录屏转截图', module: videoScreen, push: true },
+  bill: { title: '交易明细格式化', module: billScreen, push: true },
   records: { title: '导出记录', module: recordsScreen, tab: 'records' },
   settings: { title: '设置', module: settingsScreen, tab: 'settings' },
 };
@@ -53,6 +55,7 @@ const debugState = {
   page: 'home',
   adb: { connected: false, running: false, processing: false, shots: 0, phase: '', progress: 0 },
   video: { running: false, processing: false, phase: '', progress: 0, pages: 0 },
+  bill: { busy: false, exporting: '', rows: 0, selected: 0 },
 };
 
 function setDebug(kind, data) {

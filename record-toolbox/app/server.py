@@ -203,6 +203,51 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._send_json(result)
 
+    def _handle_bill_upload(self) -> None:
+        """接收交易明细 PDF / 自定义模板（原始字节流）。"""
+        length = int(self.headers.get("Content-Length") or 0)
+        raw_name = self.headers.get("X-File-Name") or "bill.pdf"
+        kind = (self.headers.get("X-Bill-Kind") or "wechat").strip().lower()
+        try:
+            from urllib.parse import unquote  # noqa: PLC0415
+            raw_name = unquote(raw_name)
+        except Exception:  # noqa: BLE001
+            pass
+        safe = re.sub(r"[^0-9A-Za-z._\-\u4e00-\u9fff]+", "_", os.path.basename(raw_name)) or "bill.pdf"
+        if length <= 0:
+            self._send_json({"ok": False, "error": "上传内容为空"})
+            return
+        upload_dir = os.path.join(paths.data_dir(), "uploads", "bills")
+        os.makedirs(upload_dir, exist_ok=True)
+        target = os.path.join(upload_dir, f"{int(time.time())}_{safe}")
+        received = 0
+        try:
+            with open(target, "wb") as fh:
+                while received < length:
+                    chunk = self.rfile.read(min(1024 * 1024, length - received))
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+                    received += len(chunk)
+        except OSError as exc:
+            log.warning("上传交易明细失败：%s", exc)
+            self._send_json({"ok": False, "error": f"写入文件失败：{exc}"})
+            return
+        if received < length:
+            try:
+                os.remove(target)
+            except OSError:
+                pass
+            self._send_json({"ok": False, "error": "上传中断，请重试"})
+            return
+        try:
+            result = api.upload_bill(target, raw_name, kind)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("解析上传的交易明细失败：%s", exc)
+            self._send_json({"ok": False, "error": str(exc)})
+            return
+        self._send_json(result)
+
     def do_POST(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
         path = urllib.parse.unquote(parsed.path)
@@ -212,6 +257,9 @@ class Handler(BaseHTTPRequestHandler):
         action = path[len("/api/"):].strip("/")
         if action == "upload_video":
             self._handle_video_upload()
+            return
+        if action == "upload_bill":
+            self._handle_bill_upload()
             return
         try:
             length = int(self.headers.get("Content-Length") or 0)

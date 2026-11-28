@@ -123,27 +123,6 @@
       });
     }
 
-    var pub = document.getElementById("pubDate");
-    if (pub) {
-      var dText = fmtDate(info.publishedAt);
-      if (dText) pub.textContent = "发布于 " + dText;
-    }
-
-    var notesEl = document.getElementById("vcNotes");
-    if (notesEl && typeof info.notes === "string" && info.notes.trim()) {
-      var items = info.notes.split(/\r?\n/).map(function (s) {
-        return s.replace(/^\s*[-•*]\s*/, "").trim();
-      }).filter(Boolean);
-      if (items.length) {
-        notesEl.innerHTML = "";
-        items.forEach(function (text) {
-          var li = document.createElement("li");
-          li.textContent = text;
-          notesEl.appendChild(li);
-        });
-      }
-    }
-
     if (apk) {
       var m = /([^/\\]+)$/.exec(apk);
       if (m) {
@@ -151,6 +130,46 @@
           el.textContent = m[1];
         });
       }
+    }
+  }
+
+  /* ---------- 电脑版版本清单（record-toolbox-version.json） ---------- */
+  var TOOLBOX_VERSION_URL = "record-toolbox-version.json";
+
+  function applyToolboxVersion(info) {
+    if (!info || !info.version) return;
+
+    document.querySelectorAll("[data-win-version]").forEach(function (el) {
+      el.textContent = info.version;
+    });
+
+    var sizeText = fmtSize(info.size);
+    if (sizeText) {
+      document.querySelectorAll("[data-win-size]").forEach(function (el) {
+        el.textContent = sizeText;
+      });
+    }
+
+    if (info.zip) {
+      document.querySelectorAll("[data-win-download]").forEach(function (el) {
+        el.setAttribute("href", info.zip);
+      });
+    }
+
+    var pub = document.getElementById("pubDate");
+    if (pub) {
+      var dText = fmtDate(info.publishedAt);
+      if (dText) pub.textContent = "发布于 " + dText;
+    }
+
+    var notesEl = document.getElementById("vcNotes");
+    if (notesEl && Array.isArray(info.notes) && info.notes.length) {
+      notesEl.innerHTML = "";
+      info.notes.forEach(function (text) {
+        var li = document.createElement("li");
+        li.textContent = text;
+        notesEl.appendChild(li);
+      });
     }
   }
 
@@ -165,5 +184,19 @@
       .then(function (info) { applyVersion(info); })
       .catch(function () { /* 静默：使用页面内置默认版本信息 */ })
       .then(function () { clearTimeout(timer); });
+  }
+
+  /* ---------- 电脑版版本清单（record-toolbox-version.json） ---------- */
+  if (window.fetch) {
+    var ctrlWin = window.AbortController ? new AbortController() : null;
+    var timerWin = setTimeout(function () { if (ctrlWin) ctrlWin.abort(); }, 5000);
+    fetch(TOOLBOX_VERSION_URL, ctrlWin ? { signal: ctrlWin.signal, cache: "no-store" } : { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (info) { applyToolboxVersion(info); })
+      .catch(function () { /* 静默：使用页面内置默认版本信息 */ })
+      .then(function () { clearTimeout(timerWin); });
   }
 })();
