@@ -1802,3 +1802,34 @@ html[data-theme="dark"] .inline-status-ok { color: #4cd964; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------- 录屏拖放区域 ---------------- */
+.pick-dropzone {
+  border: 2px dashed rgba(10, 132, 255, 0.28);
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+}
+.pick-dropzone.dragover {
+  border-color: rgba(10, 132, 255, 0.85);
+  background-color: rgba(10, 132, 255, 0.06);
+  transform: scale(1.002);
+}
+.pick-upload-progress {
+  margin-top: 10px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(120, 120, 128, 0.16);
+  overflow: hidden;
+}
+.pick-upload-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #3d8bff, #22d3ee);
+  border-radius: 999px;
+  transition: width 120ms linear;
+}
+
+/* ---------------- 检查更新弹窗 ---------------- */
+.update-dialog { display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.update-line { margin: 0; color: var(--text-1, #111114); }
+.update-notes { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--text-1, #111114); }
+.update-hint { margin: 0; color: var(--text-2, #8e8e93); font-size: 13px; line-height: 1.5; }

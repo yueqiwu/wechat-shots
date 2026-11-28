@@ -8,6 +8,7 @@ import * as adbScreen from './screens/adb.js';
 import * as videoScreen from './screens/videoScreen.js';
 import * as recordsScreen from './screens/records.js';
 import * as settingsScreen from './screens/settings.js';
+import { checkForUpdates } from './updateUI.js';
 
 const { h, icon } = ui;
 
@@ -438,6 +439,8 @@ async function boot() {
     await refreshState({ silent: false });
     await navigate(ROUTES[initial] ? initial : 'home');
     revealApp();
+    // 启动 1.5 秒后静默检查更新（网络失败不打扰用户）
+    setTimeout(() => { checkForUpdates({ silent: true }).catch(() => {}); }, 1500);
   } catch (error) {
     console.error('启动失败', error);
     reportError('启动失败：' + (error && error.message ? error.message : error));

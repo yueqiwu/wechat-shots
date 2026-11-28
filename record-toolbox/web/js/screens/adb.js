@@ -942,14 +942,9 @@ export function mount(root, ctx) {
       updateRunningUI();
       appendRunLog(`第 1 屏 · 耗时 ${formatMs(first.shot.elapsedMs)}`);
 
-      const maxShots = Math.max(10, Math.min(2000, Number(settings().max_shots) || 500));
+      // 不再限制截图张数：只要还能往下滚、没有到聊天顶部，就继续采集
       let stagnant = 0;
       while (!stopRequested && !cancelled) {
-        if (shots.length >= maxShots) {
-          capture.stopReason = `已达到最多 ${maxShots} 屏上限`;
-          break;
-        }
-
         /* 滑动 → 等页面停稳 → 截图；若截图和上一屏几乎相同则换更慢的滑动重试。 */
         let shot = null;
         let signature = null;

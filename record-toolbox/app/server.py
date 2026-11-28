@@ -10,6 +10,7 @@ import mimetypes
 import os
 import re
 import threading
+import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -158,6 +159,50 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(500)
 
     # ------------------------------------------------------------------- POST
+    def _handle_video_upload(self) -> None:
+        """接收前端拖拽进来的录屏文件（原始字节流），落盘后登记成视频 session。"""
+        length = int(self.headers.get("Content-Length") or 0)
+        raw_name = self.headers.get("X-File-Name") or "recording.mp4"
+        try:
+            from urllib.parse import unquote  # noqa: PLC0415
+            raw_name = unquote(raw_name)
+        except Exception:  # noqa: BLE001
+            pass
+        safe = re.sub(r"[^0-9A-Za-z._\-\u4e00-\u9fff]+", "_", os.path.basename(raw_name)) or "recording.mp4"
+        if length <= 0:
+            self._send_json({"ok": False, "error": "上传内容为空"})
+            return
+        upload_dir = os.path.join(paths.data_dir(), "uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+        target = os.path.join(upload_dir, f"{int(time.time())}_{safe}")
+        received = 0
+        try:
+            with open(target, "wb") as fh:
+                while received < length:
+                    chunk = self.rfile.read(min(1024 * 1024, length - received))
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+                    received += len(chunk)
+        except OSError as exc:
+            log.warning("上传录屏失败：%s", exc)
+            self._send_json({"ok": False, "error": f"写入文件失败：{exc}"})
+            return
+        if received < length:
+            try:
+                os.remove(target)
+            except OSError:
+                pass
+            self._send_json({"ok": False, "error": "上传中断，请重试"})
+            return
+        try:
+            result = api.create_video_session(target, raw_name, received)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("登记上传视频失败：%s", exc)
+            self._send_json({"ok": False, "error": str(exc)})
+            return
+        self._send_json(result)
+
     def do_POST(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
         path = urllib.parse.unquote(parsed.path)
@@ -165,6 +210,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         action = path[len("/api/"):].strip("/")
+        if action == "upload_video":
+            self._handle_video_upload()
+            return
         try:
             length = int(self.headers.get("Content-Length") or 0)
             raw = self.rfile.read(length) if length else b"{}"

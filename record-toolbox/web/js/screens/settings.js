@@ -3,6 +3,7 @@
  */
 import { h, icon, sectionCard, field, segmented, switchRow, button, toast, banner, row } from '../ui.js';
 import { api } from '../api.js';
+import { checkForUpdates } from '../updateUI.js';
 
 const PAGE_HEIGHTS = [
   { value: 'short', label: '更短' },
@@ -243,22 +244,6 @@ export function mount(root, ctx) {
       },
     });
 
-    const maxShotsField = field({
-      label: '最多截取屏数',
-      type: 'number',
-      value: String(ctx.state.settings.max_shots || 500),
-      hint: '达到该数量会自动停止，避免聊天记录过长时占用过多时间。',
-    });
-    maxShotsField.input.min = '10';
-    maxShotsField.input.max = '2000';
-    maxShotsField.input.style.maxWidth = '120px';
-    maxShotsField.input.addEventListener('change', async () => {
-      const value = Math.round(Number(maxShotsField.input.value) || 500);
-      const clamped = Math.min(2000, Math.max(10, value));
-      maxShotsField.input.value = String(clamped);
-      try { await ctx.saveSettings({ max_shots: clamped }); } catch (error) { /* 已提示 */ }
-    });
-
     const exportCard = sectionCard({
       title: '导出与性能',
       desc: '这些参数同时作用于手机截图导出和录屏转截图。',
@@ -284,7 +269,6 @@ export function mount(root, ctx) {
             try { await ctx.saveSettings({ keep_raw_shots: checked }); } catch (error) { /* 已提示 */ }
           },
         }),
-        maxShotsField,
       ],
     });
 
@@ -295,6 +279,13 @@ export function mount(root, ctx) {
       icon: 'info',
       children: [
         row({ icon: 'bubble', title: '笔录工具箱', desc: '聊天记录导出工具', extra: h('span', { class: 'row-value' }, 'v' + (app.version || '1.0.0')) }),
+        row({
+          icon: 'bolt',
+          title: '检查更新',
+          desc: '发现新版本后可自动下载并替换，无需重新安装。',
+          extra: h('span', { class: 'row-value' }, '检查'),
+          onClick: async () => { await checkForUpdates({ silent: false }); },
+        }),
         row({
           icon: 'link',
           title: '项目主页',

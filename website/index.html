@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>聊天截图导出 · 把聊天记录变成一张完整截图</title>
-<meta name="description" content="聊天截图导出：无线 ADB 自动翻页截图拼接，或上传录屏自动转截图。不重叠、去重、全程本地处理，无需 root。Android 11+">
+<title>笔录工具箱 · 微信聊天记录导出（Windows 版）</title>
+<meta name="description" content="笔录工具箱：Windows 电脑上把微信聊天记录导出成连续长截图 / 分页截图。USB 或无线 ADB 自动滚屏截图，或直接拖入手机录屏自动转截图。不重叠、去重、全程本地处理，低配电脑也能跑。">
 <meta name="theme-color" content="#f5f6fa">
-<meta property="og:title" content="聊天截图导出 · 把聊天记录变成一张完整截图">
-<meta property="og:description" content="无线 ADB 自动翻页拼接，或录屏一键转截图。不重叠、去重、本地处理。">
+<meta property="og:title" content="笔录工具箱 · 微信聊天记录导出（Windows 版）">
+<meta property="og:description" content="Windows 桌面工具：自动滚屏截图或录屏转截图，去重拼接成完整长图。">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
@@ -21,7 +21,7 @@
 
 <header class="nav" id="nav">
   <div class="nav-inner container">
-    <a class="brand" href="#top" aria-label="聊天截图导出">
+    <a class="brand" href="#top" aria-label="笔录工具箱">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 32 32" width="28" height="28">
           <defs>
@@ -35,13 +35,13 @@
           <rect x="9" y="16.2" width="10" height="2.6" rx="1.3" fill="#fff" opacity=".85"/>
         </svg>
       </span>
-      <span class="brand-name">聊天截图导出</span>
+      <span class="brand-name">笔录工具箱</span>
     </a>
     <nav class="nav-links" aria-label="页面导航">
+      <a href="#download">下载</a>
       <a href="#solutions">两种方案</a>
       <a href="#features">功能亮点</a>
-      <a href="#windows">Windows 版</a>
-      <a href="#install">安装</a>
+      <a href="#install">使用说明</a>
       <a href="#faq">常见问题</a>
     </nav>
     <div class="nav-actions">
@@ -49,7 +49,7 @@
         <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"/></g></svg>
         <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20.2 14.4A8.6 8.6 0 0 1 9.6 3.8 8.8 8.8 0 1 0 20.2 14.4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
       </button>
-      <a class="btn btn-small btn-primary" data-download href="wechat-shots-1.1.3.apk">下载 APK</a>
+      <a class="btn btn-small btn-primary" href="record-toolbox-1.0.3-win64.zip">下载 Windows 版</a>
     </div>
   </div>
 </header>
@@ -61,25 +61,29 @@
       <div class="hero-copy">
         <div class="badge reveal" data-reveal>
           <span class="dot"></span>
-          <span><span data-version-name>1.1.3</span> · 支持 Android 11+</span>
+          <span><span data-win-version>1.0.3</span> · Windows 10 / 11</span>
         </div>
         <h1 class="reveal" data-reveal>
           把聊天记录，<br>
           变成<span class="grad">一张完整的截图</span>
         </h1>
         <p class="lead reveal" data-reveal>
-          自动翻页、智能去重、无缝拼接。可以用无线 ADB 直接截取聊天界面，
-          也可以上传一段录屏自动转成不重叠的截图。全程本地处理，不上传任何聊天内容。
+          「笔录工具箱」在电脑上把微信聊天记录导出成连续长图或分页截图：
+          手机连电脑后用 USB 调试（也支持无线）自动滚屏截图，或者直接把手机录屏拖进窗口转成截图。
+          全程本地处理，不上传任何聊天内容，低配电脑也能跑。
         </p>
         <div class="hero-cta reveal" data-reveal>
-          <a class="btn btn-primary btn-lg" data-download href="wechat-shots-1.1.3.apk">
+          <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            下载 APK<span class="btn-sub" data-apk-size>约 103 MB</span>
+            下载 Windows 版<span class="btn-sub">约 22 MB</span>
           </a>
           <a class="btn btn-ghost btn-lg" href="#solutions">先看看怎么用</a>
         </div>
+        <p class="hero-sub reveal" data-reveal style="margin-top:14px">
+          手机端「聊天截图导出」仍可下载：<a data-download href="wechat-shots-1.1.3.apk">Android 旧版 APK（<span data-apk-size>约 103 MB</span>）</a>，后续可能停止更新。
+        </p>
         <ul class="hero-points reveal" data-reveal>
-          <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>无需 root</li>
+          <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>解压即用，无需安装</li>
           <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>截图自动拼接去重</li>
           <li><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="m4.5 10.4 3.4 3.3 7.6-7.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>纯本地离线可用</li>
         </ul>
@@ -127,7 +131,7 @@
       <div class="stat"><b>0</b><span>root 要求</span></div>
       <div class="stat"><b>100%</b><span>本地处理</span></div>
       <div class="stat"><b>2</b><span>种导出方案</span></div>
-      <div class="stat"><b>Android 11+</b><span>无线调试直连</span></div>
+      <div class="stat"><b>Windows 10/11</b><span>电脑端运行</span></div>
     </div>
 
     <a class="scroll-cue" href="#solutions" aria-label="向下滚动"><span></span></a>
@@ -139,7 +143,7 @@
       <div class="sec-head reveal" data-reveal>
         <p class="eyebrow">两种方案 · 按场景选择</p>
         <h2>想怎么导出，都可以</h2>
-        <p class="sec-desc">同一份聊天记录，既可以现场自动翻页拼接，也可以先录屏再离线转图。两种方案输出结果一致：不重叠、不重复、顺序完整。</p>
+        <p class="sec-desc">「笔录工具箱」在电脑上提供两种导出方式：USB 调试连手机自动滚屏截图，或把手机录屏拖进窗口自动转截图。两种方式输出结果一致：不重叠、不重复、顺序完整。</p>
       </div>
 
       <div class="solutions">
@@ -156,22 +160,22 @@
               <path d="m30.5 31 3.2-1.6-1.6 3.2z" fill="currentColor"/>
             </svg>
           </div>
-          <h3>无线 ADB 截图导出</h3>
-          <p class="sol-desc">手机与电脑同一 Wi-Fi，打开无线调试即可连接。App 自动滚动聊天页面、连续截图，再按内容拼接去重，一次输出从头到尾不重叠的完整截图。</p>
+          <h3>手机截图导出（USB / 无线调试）</h3>
+          <p class="sol-desc">手机用数据线连电脑并打开 USB 调试（也可以先 USB 再切无线），工具自动滚动聊天页面、逐屏截图，再按内容拼接去重，一次输出从头到尾不重叠的完整截图。</p>
           <ul class="sol-list">
-            <li>自动翻页，无需手动截屏</li>
-            <li>按像素对齐拼接，边界不重叠</li>
-            <li>自动识别并去掉重复段落</li>
-            <li>支持一次导出多个会话</li>
+            <li>自动滚屏截图，无需手动截屏</li>
+            <li>按像素对齐拼接，页与页连续</li>
+            <li>自动剔除重复段落与坏屏</li>
+            <li>截图张数不设上限，长聊天也能导到底</li>
           </ul>
           <div class="sol-flow">
-            <span>连接无线调试</span><i>→</i><span>选择会话</span><i>→</i><span>自动拼接导出</span>
+            <span>连接手机</span><i>→</i><span>停在聊天页</span><i>→</i><span>自动截图拼接</span>
           </div>
         </article>
 
         <article class="card solution reveal" data-reveal>
           <div class="solution-top">
-            <span class="pill pill-blue">方案 B · 无需电脑</span>
+            <span class="pill pill-blue">方案 B · 不用连线</span>
             <span class="sol-index">02</span>
           </div>
           <div class="sol-icon">
@@ -182,15 +186,15 @@
             </svg>
           </div>
           <h3>录屏转截图</h3>
-          <p class="sol-desc">先用系统录屏把聊天慢慢滑一遍，再导入录屏。App 逐帧分析、对齐拼接，把整段聊天还原成一页页截图并切分页面，不需要连接电脑。</p>
+          <p class="sol-desc">先用手机系统录屏把聊天慢慢滑一遍，再把视频文件直接拖进窗口。工具逐帧分析、对齐拼接，把整段聊天还原成一页页截图并切分页面，不需要连接手机。</p>
           <ul class="sol-list">
-            <li>导入录屏，自动抽帧分析</li>
-            <li>按滚动位移拼接，画面不重复</li>
-            <li>自动切分成单页截图</li>
-            <li>不受设备连接方式限制</li>
+            <li>拖拽导入视频，无需先转格式</li>
+            <li>自适应抽帧，自动识别滚动方向</li>
+            <li>自动裁掉状态栏、标题栏与输入框</li>
+            <li>可导出 ZIP，一次拿走全部截图</li>
           </ul>
           <div class="sol-flow">
-            <span>系统录屏</span><i>→</i><span>导入录屏</span><i>→</i><span>自动拼接切页</span>
+            <span>手机录屏</span><i>→</i><span>拖入窗口</span><i>→</i><span>自动拼接切页</span>
           </div>
         </article>
       </div>
@@ -203,38 +207,38 @@
       <div class="sec-head reveal" data-reveal>
         <p class="eyebrow">功能亮点</p>
         <h2>为「完整截图」打磨的细节</h2>
-        <p class="sec-desc">导出的意义是拿一张图就能看完，所以每一个环节都围绕清晰、完整、不重复来做。</p>
+        <p class="sec-desc">从手机采集、对齐去重到分页输出，每个环节都围绕清晰、完整、不重复来做。</p>
       </div>
       <div class="features">
         <article class="card feature reveal" data-reveal>
           <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="6" y="4" width="20" height="24" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 10h10M11 15h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 20v6m0 0-2.6-2.6M16 26l2.6-2.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-          <h3>自动翻页</h3>
-          <p>通过无线 ADB 控制聊天界面逐屏滚动，一页一页自动截取，长对话也不用守着屏幕。</p>
+          <h3>自动滚屏</h3>
+          <p>通过 USB 调试或无线 ADB 控制手机聊天界面逐屏滚动、自动截图，长对话也不用守着屏幕；截图张数不设上限。</p>
         </article>
         <article class="card feature reveal" data-reveal>
           <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M6 22V10a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 16h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 21.5v-11m0 0-2.8 2.8M16 10.5l2.8 2.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <h3>智能去重</h3>
-          <p>相邻截图的重叠区域按内容比对剔除，只保留新增部分，最终图像里没有重复气泡。</p>
+          <p>相邻截图的重叠区域按内容比对剔除，只保留新增部分，最终图像里没有重复气泡，页与页上下连续。</p>
         </article>
         <article class="card feature reveal" data-reveal>
           <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 4 6 8v8c0 7 4.6 10.8 10 12 5.4-1.2 10-5 10-12V8l-10-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m11.5 16 3 3 5.5-5.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <h3>本地处理</h3>
-          <p>截图、录屏、拼接全部在手机本地完成，不上传服务器，聊天内容只留在你的设备里。</p>
+          <p>截图、录屏、拼接全部在这台电脑上完成，不上传服务器，聊天内容只留在你的设备里。</p>
         </article>
         <article class="card feature reveal" data-reveal>
-          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><rect x="7" y="5" width="14" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="13" y="10" width="14" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg></div>
-          <h3>批量导出</h3>
-          <p>一次选择多个会话依次导出，文件名自动带上会话名与时间，整理归档更省事。</p>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 5v6M16 21v6M5 16h6M21 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 8.5 3 3M20.5 20.5l3 3M23.5 8.5l-3 3M11.5 20.5l-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <h3>自动更新</h3>
+          <p>启动后自动检查新版本，可在应用内直接下载、校验并替换，完成后自动重新打开；设置页也能手动检查。</p>
         </article>
         <article class="card feature reveal" data-reveal>
           <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 9.5V16l4.5 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <h3>长图不中断</h3>
-          <p>连续滚动拼接整段对话，几十屏的长聊天也能合成一条完整长图，顺序不乱。</p>
+          <p>连续滚动拼接整段对话，几十屏的长聊天也能合成一条完整长图，顺序不乱，再自动切成单页。</p>
         </article>
         <article class="card feature reveal" data-reveal>
-          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M16 5v6M16 21v6M5 16h6M21 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 8.5 3 3M20.5 20.5l3 3M23.5 8.5l-3 3M11.5 20.5l-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-          <h3>无需 root</h3>
-          <p>基于系统无线调试能力，普通手机即可使用，不刷机、不装框架，卸载即无残留。</p>
+          <div class="f-icon"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path d="M7 9h18v11H7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M3 24h26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M11 13h10M11 16.5h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <h3>低配也能跑</h3>
+          <p>Python + WebView2 架构，没有 Electron 那种内存开销；安装包内置 adb，解压双击即用，不需要装 Python。</p>
         </article>
       </div>
     </div>
@@ -245,124 +249,128 @@
     <div class="container">
       <div class="sec-head reveal" data-reveal>
         <p class="eyebrow">三步开始</p>
-        <h2>装好就能用</h2>
+        <h2>解压就能用</h2>
       </div>
       <ol class="steps">
         <li class="reveal" data-reveal>
           <span class="step-no">1</span>
-          <h3>下载并安装</h3>
-          <p>点击下载 APK 安装。首次安装需在系统设置中允许「安装未知来源应用」。</p>
+          <h3>下载并解压</h3>
+          <p>下载 Windows 版压缩包，解压到任意目录，双击「笔录工具箱.exe」运行。<br>无需安装 Python，官方包已内置 adb。</p>
         </li>
         <li class="reveal" data-reveal>
           <span class="step-no">2</span>
-          <h3>连接无线调试</h3>
-          <p>开发者选项里开启「无线调试」，输入配对码完成配对，或直接导入录屏。</p>
+          <h3>连接手机或拖入录屏</h3>
+          <p>手机用数据线连电脑，按界面引导开启 USB 调试；或者直接选择「录屏转截图」，
+            把手机录屏拖进窗口。</p>
         </li>
         <li class="reveal" data-reveal>
           <span class="step-no">3</span>
           <h3>导出完整截图</h3>
-          <p>选择要导出的会话，等待自动翻页拼接完成，在相册或导出目录查看结果。</p>
+          <p>选择要导出的会话，等待自动去重拼接完成，按文件夹或 ZIP 保存结果。</p>
         </li>
       </ol>
     </div>
   </section>
 
-  <!-- ========================= 下载 + 版本 ========================= -->
+  <!-- ========================= 下载 ========================= -->
   <section class="section download-section" id="download">
     <div class="container">
       <div class="download-card reveal" data-reveal>
         <div class="dl-left">
-          <h2>下载聊天截图导出</h2>
-          <p>当前版本 <b data-version-name>1.1.3</b> · 支持 Android 11 及以上 · <span data-apk-size>约 103 MB</span></p>
+          <p class="eyebrow" style="margin:0 0 8px">Windows 电脑版</p>
+          <h2>下载笔录工具箱</h2>
+          <p>当前版本 <b data-win-version>1.0.3</b> · Windows 10 / 11 · 约 22 MB · 解压即用</p>
           <div class="dl-buttons">
-            <a class="btn btn-primary btn-lg" data-download href="wechat-shots-1.1.3.apk">
+            <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">
               <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              下载 APK
+              下载 Windows 版
             </a>
-            <a class="btn btn-ghost btn-lg" href="#install">安装说明</a>
+            <a class="btn btn-ghost btn-lg" href="#install">使用说明</a>
           </div>
+          <p class="hero-sub" style="margin-top:14px">手机端旧版：<a data-download href="wechat-shots-1.1.3.apk">聊天截图导出 Android 11+（<span data-apk-size>约 103 MB</span>）</a> · 后续可能停止更新，推荐使用电脑版。</p>
         </div>
         <div class="dl-right">
           <div class="version-card">
             <div class="vc-head">
               <span class="vc-badge">最新版本</span>
-              <span class="vc-ver" data-version-name>1.1.3</span>
+              <span class="vc-ver" data-win-version>1.0.3</span>
             </div>
             <ul class="vc-notes" id="vcNotes">
-              <li>截图重叠从约 50% 降到约 10%～25%：同样内容截图更少、导出更快</li>
-              <li>新增拼接一致性校验：遇到重复/错位自动回退原始截图，避免输出错页</li>
-              <li>输出页之间依旧无重复，说明文字与 App 内提示同步更新</li>
-              <li>保留自动配对助手、录屏转截图等全部功能</li>
+              <li>截图张数不再限制，长聊天也能一次导到底</li>
+              <li>新增自动更新：启动自动检查，可一键下载替换并重新打开</li>
+              <li>录屏转截图支持把视频直接拖进窗口导入</li>
+              <li>保留真机截图去重、坏屏剔除、iOS 风格界面等全部功能</li>
             </ul>
-            <p class="vc-date">发布于 <span id="pubDate">2026-11-27</span></p>
+            <p class="vc-date">发布于 <span id="pubDate">2026-11-29</span></p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========================= Windows 版 ========================= -->
+  <!-- ========================= Windows 版说明 ========================= -->
   <section class="section section-alt" id="windows">
-    <div class="container reveal" data-reveal>
+    <div class="container reveal" data-reveal">
       <p class="eyebrow">Windows 电脑版</p>
       <h2>在电脑上导出：笔录工具箱</h2>
-      <p class="sec-desc">同样的聊天记录导出能力，桌面端叫「笔录工具箱」。手机连电脑后用 USB 调试（也可以先 USB 再切无线）自动滚屏截图，或者直接导入手机录屏转截图。全程本地处理、不上传，低配电脑也能跑（Python + WebView2，没有 Electron 那种内存开销）。</p>
+      <p class="sec-desc">同样的聊天记录导出能力，桌面端叫「笔录工具箱」。手机连电脑后用 USB 调试（也可以先 USB 再切无线）自动滚屏截图，或者直接把手机录屏拖进窗口转截图。全程本地处理、不上传，低配电脑也能跑（Python + WebView2，没有 Electron 那种内存开销）。</p>
       <ul class="hero-points" style="justify-content:center;margin:18px 0 26px">
-        <li>USB 调试 / 无线 ADB 自动滚屏截图，约 10%～25% 重叠，自动去重分页</li>
-        <li>导入录屏自动抽帧、重建长图、切页导出 + ZIP</li>
-        <li>内置 adb 与 iOS 风格界面，解压即用，无需安装 Python</li>
+        <li>USB 调试 / 无线 ADB 自动滚屏截图，约 10%～25% 重叠，自动去重分页，张数不设上限</li>
+        <li>录屏可拖拽导入，自动抽帧、重建长图、切页导出 + ZIP</li>
+        <li>内置 adb 与 iOS 风格界面，解压即用，无需安装 Python；支持应用内自动更新</li>
       </ul>
       <div class="dl-buttons" style="justify-content:center">
-        <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.2-win64.zip">
+        <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v11m0 0 4.2-4.2M12 14l-4.2-4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 16.5v2A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           下载 Windows 版（约 22 MB）
         </a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/yueqiwu/wechat-shots/tree/main/record-toolbox">源码与说明</a>
       </div>
-      <p class="hero-sub" style="text-align:center;margin-top:14px">Windows 10 / 11 · 解压后双击「笔录工具箱.exe」即可运行，首次使用按界面引导开启 USB 调试<br>1.0.2 已修复真机 USB 截图偶发「拼接失败」（滑动惯性导致重叠不均）</p>
+      <p class="hero-sub" style="text-align:center;margin-top:14px">Windows 10 / 11 · 解压后双击「笔录工具箱.exe」即可运行，首次使用按界面引导开启 USB 调试<br>1.0.3 新增自动更新、录屏拖拽导入，并取消截图张数上限</p>
     </div>
   </section>
 
-  <!-- ========================= 安装 ========================= -->
+  <!-- ========================= 使用说明 ========================= -->
   <section class="section section-alt" id="install">
     <div class="container">
       <div class="sec-head reveal" data-reveal>
-        <p class="eyebrow">安装步骤</p>
-        <h2>允许未知来源，即可安装</h2>
-        <p class="sec-desc">本应用通过官网直接分发 APK，不经过应用商店。首次安装时系统会提示来源未知，按下面步骤允许即可。</p>
+        <p class="eyebrow">使用说明</p>
+        <h2>解压即用，按引导连接手机</h2>
+        <p class="sec-desc">笔录工具箱是绿色软件，下载后解压、双击即可运行，不需要安装 Python 或额外组件；官方包已内置 adb。</p>
       </div>
       <div class="install">
         <ol class="install-list reveal" data-reveal>
           <li>
             <span class="il-no">1</span>
             <div>
-              <h3>下载 APK 文件</h3>
-              <p>在手机浏览器打开本页，点击下载按钮，等待 <code>wechat-shots-1.1.3.apk</code> 下载完成。</p>
+              <h3>下载并解压</h3>
+              <p>下载 <code>record-toolbox-1.0.3-win64.zip</code>，解压到任意目录（路径尽量不要带特殊符号），双击目录里的「笔录工具箱.exe」。</p>
             </div>
           </li>
           <li>
             <span class="il-no">2</span>
             <div>
-              <h3>允许安装未知来源应用</h3>
-              <p>点击下载好的 APK，系统提示「为了安全，您的手机不允许安装未知来源应用」时，进入设置 → 允许来自此来源，返回后继续安装。</p>
+              <h3>连接手机（仅手机截图方案需要）</h3>
+              <p>手机用数据线连电脑，按界面里的「还不开启 USB 调试？」引导依次打开开发者选项与 USB 调试，看到「已连接」后即可开始导出；也支持先 USB 再切换为无线调试。</p>
             </div>
           </li>
           <li>
             <span class="il-no">3</span>
             <div>
-              <h3>安装并打开</h3>
-              <p>点击安装，完成后打开应用，按引导开启无线调试（或直接使用录屏方案）即可开始导出。</p>
+              <h3>导出并保存</h3>
+              <p>在手机上打开要导出的聊天并停在目标位置，点「开始导出」；完成后可按文件夹或 ZIP 保存分页截图。录屏方案则直接把录屏视频拖进窗口即可。</p>
             </div>
           </li>
         </ol>
         <aside class="card tip-card reveal" data-reveal>
-          <h3>下载前确认</h3>
+          <h3>运行要求</h3>
           <ul>
-            <li>系统版本：<b>Android 11 及以上</b></li>
-            <li>文件大小：<b data-apk-size>约 103 MB</b>，建议 Wi-Fi 下载</li>
-            <li>安装来源：本站直链，下载后可直接校验文件大小</li>
-            <li>所有聊天数据在设备本地处理，不会上传</li>
+            <li>系统版本：<b>Windows 10 / 11</b>（自带 WebView2 运行时）</li>
+            <li>安装包大小：<b>约 22 MB</b>，解压后约 44 MB</li>
+            <li>无需安装 Python，无需单独下载 adb</li>
+            <li>所有聊天数据在本机处理，不会上传</li>
           </ul>
+          <p style="margin-top:14px">手机端旧版「聊天截图导出」仍提供 APK 下载（Android 11+，<a data-download href="wechat-shots-1.1.3.apk">约 103 MB</a>），后续可能停止更新。</p>
         </aside>
       </div>
     </div>
@@ -377,42 +385,48 @@
       </div>
       <div class="faq">
         <details class="reveal" data-reveal>
-          <summary>无线调试怎么开？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <summary>手机怎么连电脑？USB 调试怎么开？<span class="faq-chev" aria-hidden="true"></span></summary>
           <div class="faq-body">
-            <p>打开手机「设置 → 关于手机」，连续点击「版本号」7 次开启开发者选项；回到「设置 → 系统 → 开发者选项」，打开「无线调试」。之后可以在无线调试页面看到配对码与端口。</p>
-            <p>部分品牌路径略有差异：小米在「设置 → 更多设置 → 开发者选项」，OPPO/一加在「设置 → 系统设置 → 开发者选项」，vivo 在「设置 → 系统管理 → 开发者选项」。</p>
-          </div>
-        </details>
-        <details class="reveal" data-reveal>
-          <summary>自动配对怎么用？<span class="faq-chev" aria-hidden="true"></span></summary>
-          <div class="faq-body">
-            <p>在 App 里进入「无线 ADB 截图导出 → 连接设备」，点橙色「截图自动配对」卡片，再点「自动配对：打开无线调试设置」。首次使用按提示开启一次「自动配对助手」（系统无障碍权限，仅读取无线调试页面的文字，不上传任何内容）。之后 App 会自动打开系统无线调试页、自动点开「输入配对码配对设备」，读取弹窗里的配对码与端口并完成连接。不需要截图，也不需要切回 App —— ColorOS/澎湃等系统会在切走时立刻关闭配对弹窗，自动配对助手正好绕过这个限制。</p>
-            <p>不想开启无障碍权限时，也可以手动输入配对码与配对端口完成配对；配对成功后，后续同一 Wi-Fi 下会自动连接。如果仍失败，请确认手机和目的地处于同一局域网、无线调试保持开启，并检查是否被系统省电策略冻结后台。</p>
+            <p>用数据线把手机连到电脑，在手机上「设置 → 关于手机」连续点击「版本号」7 次开启开发者选项；回到「设置 → 系统 → 开发者选项」，打开「USB 调试」。手机弹出「允许 USB 调试吗？」时点允许。工具界面里也有同样的图文引导，看到「已连接」就可以导出。</p>
+            <p>也支持无线：先 USB 连一次，再按界面提示切换到无线调试（Android 11+），之后同一 Wi-Fi 下无需插线。</p>
           </div>
         </details>
         <details class="reveal" data-reveal>
           <summary>录屏方案怎么用？<span class="faq-chev" aria-hidden="true"></span></summary>
           <div class="faq-body">
-            <p>先用系统自带录屏，把要导出的聊天从开头慢慢滑到结尾，建议每一屏稍作停留、滚动速度均匀。录屏结束后打开 App，导入这段录屏，App 会自动抽帧、按滚动位移拼接，并切分成单页截图。</p>
+            <p>先用手机自带录屏，把要导出的聊天从开头慢慢滑到结尾，建议每一屏稍作停留、滚动速度均匀。录屏结束后把视频文件<b>直接拖进工具窗口</b>（或点击选择文件），工具会自动抽帧、按滚动位移拼接，并切分成单页截图。</p>
             <p>录屏时请关闭通知横幅与悬浮球，避免遮挡聊天内容影响拼接。</p>
           </div>
         </details>
         <details class="reveal" data-reveal>
-          <summary>需要 Android 11+ 吗？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <summary>Windows 版需要安装 Python 吗？对电脑要求高吗？<span class="faq-chev" aria-hidden="true"></span></summary>
           <div class="faq-body">
-            <p>是的。无线 ADB 配对能力需要 Android 11 及以上系统（开发者选项中的「无线调试」），所以 App 的最低系统要求为 Android 11。录屏方案同样运行在 Android 11+。</p>
+            <p>不需要。下载压缩包解压后双击「笔录工具箱.exe」即可运行，官方包已内置 adb 与运行所需组件。系统要求 Windows 10 / 11（自带 WebView2），安装包约 22 MB、解压后约 44 MB。</p>
+            <p>程序使用 Python + WebView2，没有 Electron 那种内存开销，低配电脑也能流畅运行；录屏方案在很老的机器上可通过降低分析精度换速度。</p>
+          </div>
+        </details>
+        <details class="reveal" data-reveal>
+          <summary>会自动更新吗？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>会。启动后会在后台静默检查官网最新版本（只读取版本清单，不上传数据）；发现新版本时弹窗提示，确认后在应用内下载、校验 SHA-256 并替换程序文件，完成后自动重新打开。设置页也可以手动「检查更新」。</p>
           </div>
         </details>
         <details class="reveal" data-reveal>
           <summary>聊天内容会被上传吗？<span class="faq-chev" aria-hidden="true"></span></summary>
           <div class="faq-body">
-            <p>不会。截图、录屏导入、拼接去重全部在手机本地完成，应用不会上传聊天图片或内容。App 只在启动时访问官网检查版本更新。</p>
+            <p>不会。截图、录屏导入、拼接去重全部在本机完成，工具不会上传聊天图片或内容；只有检查更新时会访问官网读取版本清单。</p>
           </div>
         </details>
         <details class="reveal" data-reveal>
-          <summary>安装时提示「未安装应用」或解析失败怎么办？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <summary>手机截图导出提示「拼接失败」怎么办？<span class="faq-chev" aria-hidden="true"></span></summary>
           <div class="faq-body">
-            <p>通常是下载不完整导致。请通过 Wi-Fi 重新下载，下载完成后核对文件大小是否与页面显示一致；也可能是手机已有更高版本的同包名应用，卸载旧版后再安装。</p>
+            <p>1.0.2 起已按实测位移自适应调整滑动距离，并在截图后等待页面停稳、自动剔除坏屏，正常情况下不会再整单失败。如果仍遇到，请确认：微信保持在聊天页面、导出期间不要锁屏或手动滑动手机，并更新到最新版本。</p>
+          </div>
+        </details>
+        <details class="reveal" data-reveal>
+          <summary>Android 版还能下载吗？<span class="faq-chev" aria-hidden="true"></span></summary>
+          <div class="faq-body">
+            <p>可以，本页仍提供 Android 版 APK（Android 11+，支持无线 ADB 与录屏两种方案）。后续会以 Windows 电脑版为主，Android 版可能停止更新，建议优先使用电脑版。</p>
           </div>
         </details>
       </div>
@@ -423,8 +437,8 @@
   <section class="section final-cta">
     <div class="container narrow center reveal" data-reveal>
       <h2>一页看完一段对话</h2>
-      <p>下载聊天截图导出，把散落的截图整理成完整长图。</p>
-      <a class="btn btn-primary btn-lg" data-download href="wechat-shots-1.1.3.apk">下载 APK · <span data-version-name>v1.1.3</span></a>
+      <p>下载笔录工具箱，在电脑上把散落的截图整理成完整长图。</p>
+      <a class="btn btn-primary btn-lg" href="record-toolbox-1.0.3-win64.zip">下载 Windows 版 · <span data-win-version>v1.0.3</span></a>
     </div>
   </section>
 </main>
@@ -435,10 +449,10 @@
       <span class="brand-mark small" aria-hidden="true">
         <svg viewBox="0 0 32 32" width="20" height="20"><path fill="currentColor" d="M16 2.8C8.7 2.8 2.8 8.1 2.8 14.7c0 3.7 1.9 7 4.9 9.2l-.9 4.6c-.1.6.5 1 .9.7l5.2-3c1 .2 2 .3 3.1.3 7.3 0 13.2-5.3 13.2-11.8S23.3 2.8 16 2.8Z"/></svg>
       </span>
-      <span>聊天截图导出</span>
+      <span>笔录工具箱</span>
     </div>
-    <p class="footer-note">Android 11+ · 本地处理 · 无需 root</p>
-    <p class="footer-copy">© <span id="year">2026</span> 聊天截图导出 · <a href="version.json">version.json</a></p>
+    <p class="footer-note">Windows 10/11 · 本地处理 · 无需安装 · Android 版为旧版</p>
+    <p class="footer-copy">© <span id="year">2026</span> 笔录工具箱 · <a href="version.json">version.json</a></p>
   </div>
 </footer>
 

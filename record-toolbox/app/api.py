@@ -19,6 +19,7 @@ from typing import Any
 
 from . import adb as adb_module
 from . import paths, settings
+from . import update as update_module
 
 log = logging.getLogger("record_toolbox.api")
 
@@ -404,6 +405,22 @@ def _png_size(data: bytes) -> tuple[int, int]:
 
 
 # --------------------------------------------------------------------------- 分发
+def create_video_session(path: str, name: str, size: int | None = None) -> dict:
+    """把一段本地视频登记成可分析的 session（拖拽上传会先落盘再调用这里）。"""
+    if not path or not os.path.isfile(path):
+        raise ValueError("录屏文件不存在或已被移动")
+    if size is None:
+        size = os.path.getsize(path)
+    session = create_session("video")
+    session.video = {"path": path, "name": name or os.path.basename(path), "size": size}
+    paths.ensure_dirs()
+    return {
+        "ok": True,
+        "sid": session.sid,
+        "video": {"name": session.video["name"], "size": size, "path": path},
+    }
+
+
 def dispatch(action: str, payload: dict) -> dict:
     payload = payload or {}
     if action == "state":
@@ -455,6 +472,12 @@ def dispatch(action: str, payload: dict) -> dict:
             os.startfile(target)  # type: ignore[attr-defined]
             return {"ok": True}
         return {"ok": False, "message": "文件夹不存在"}
+    if action == "update.check":
+        return update_module.check(payload.get("manifestUrl") or None)
+    if action == "update.apply":
+        return update_module.apply(payload.get("manifestUrl") or None)
+    if action == "update.state":
+        return {"ok": True, "state": update_module.STATE}
     if action == "open_url":
         url = payload.get("url") or ""
         if url.startswith(("http://", "https://")):

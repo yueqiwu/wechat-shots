@@ -120,6 +120,7 @@ export function mount(root, ctx) {
   let info = null;
   let videoError = '';
   let picking = false;
+  let uploadPercent = 0;
   let busy = null; // 'processing'
   let busyRun = 0;
   let cancelled = false;
@@ -173,6 +174,68 @@ export function mount(root, ctx) {
   }
 
   /* ---------------------- 选择录屏 ---------------------- */
+  /** 把拖进来的文件流式上传到本地服务，登记成视频 session（不走内存，大文件也稳）。 */
+  function uploadVideoFile(file) {
+    if (picking || busy) return Promise.reject(new Error('正在处理中'));
+    picking = true;
+    uploadPercent = 0;
+    render();
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/upload_video');
+      xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name || 'recording.mp4'));
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          uploadPercent = event.total ? event.loaded / event.total : 0;
+          updateUploadUI();
+        }
+      });
+      xhr.addEventListener('load', () => {
+        try {
+          const data = JSON.parse(xhr.responseText || '{}');
+          if (!data.ok) throw new Error(data.error || '上传失败');
+          resolve(data);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      xhr.addEventListener('error', () => reject(new Error('上传失败，请重试')));
+      xhr.addEventListener('abort', () => reject(new Error('上传已取消')));
+      xhr.send(file);
+    }).finally(() => {
+      picking = false;
+      uploadPercent = 0;
+      render();
+    });
+  }
+
+  async function acceptDroppedFile(file) {
+    if (!file || busy || picking) return;
+    if (!/^video\//.test(file.type || '') && !/\.(mp4|mov|m4v|webm|mkv)$/i.test(file.name || '')) {
+      ui.toast('请拖入录屏视频文件（MP4 / MOV 等）', 'error');
+      return;
+    }
+    try {
+      const response = await uploadVideoFile(file);
+      sid = response.sid;
+      meta = response.video || { name: file.name, size: file.size, path: '' };
+      info = null;
+      videoError = '';
+      pages = [];
+      files = [];
+      result = null;
+      saved = null;
+      setupError = '';
+      engineMissing = false;
+      phase = '';
+      progress = 0;
+      render();
+      ui.toast('录屏已载入，可以开始分析了', 'success');
+    } catch (error) {
+      ctx.reportError('打开录屏失败：' + ((error && error.message) || error));
+    }
+  }
+
   async function pickVideo() {
     if (picking || busy) return;
     picking = true;
@@ -247,6 +310,18 @@ export function mount(root, ctx) {
   }
 
   /* ---------------------- 采集/分析进度 ---------------------- */
+  function updateUploadUI() {
+    if (disposed) return;
+    const label = pickCard ? null : null;
+    const card = document.querySelector('[data-testid="video-dropzone"]');
+    if (card) {
+      const progress = card.querySelector('.pick-upload-progress span');
+      if (progress) progress.style.width = Math.round(uploadPercent * 100) + '%';
+      const button = card.querySelector('[data-testid="video-pick"] span');
+      if (button) button.textContent = uploadPercent > 0 ? `正在导入 ${Math.round(uploadPercent * 100)}%` : '正在打开…';
+    }
+  }
+
   function updateProcessingUI() {
     const progressEl = refs.progress;
     const percentEl = refs.percent;
@@ -527,7 +602,9 @@ export function mount(root, ctx) {
 
   function pickCard() {
     const pickButton = ui.button({
-      label: picking ? '正在打开…' : '选择录屏',
+      label: picking
+        ? (uploadPercent > 0 ? `正在导入 ${Math.round(uploadPercent * 100)}%` : '正在打开…')
+        : '选择录屏',
       icon: 'film',
       variant: 'primary',
       size: 'lg',
@@ -536,13 +613,33 @@ export function mount(root, ctx) {
       onClick: pickVideo,
     });
     pickButton.setAttribute('data-testid', 'video-pick');
-    return h('div', { class: 'card pick-card' },
+    const card = h('div', { class: 'card pick-card pick-dropzone', 'data-testid': 'video-dropzone' },
       h('div', { class: 'pick-visual' },
         h('div', { class: 'pick-icon' }, icon('film', 30)),
         h('div', { class: 'pick-copy' },
-          h('div', { class: 'pick-title' }, '选择手机录屏文件'),
-          h('div', { class: 'pick-desc' }, '支持 MP4、MOV 等常见格式。若无法预览，请先把录屏转成 MP4（H.264）后重试。'))),
+          h('div', { class: 'pick-title' }, '把录屏视频拖到这里'),
+          h('div', { class: 'pick-desc' }, '也可以点下面的按钮选择文件。支持 MP4、MOV 等常见格式；若无法预览，请先把录屏转成 MP4（H.264）后重试。'),
+          uploadPercent > 0
+            ? h('div', { class: 'pick-upload-progress' }, h('span', { style: `width:${Math.round(uploadPercent * 100)}%` }))
+            : null)),
       h('div', { class: 'pick-actions' }, pickButton));
+    const stop = (event) => { event.preventDefault(); event.stopPropagation(); };
+    card.addEventListener('dragover', (event) => {
+      stop(event);
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+      card.classList.add('dragover');
+    });
+    card.addEventListener('dragleave', (event) => {
+      stop(event);
+      card.classList.remove('dragover');
+    });
+    card.addEventListener('drop', (event) => {
+      stop(event);
+      card.classList.remove('dragover');
+      const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+      if (file) acceptDroppedFile(file);
+    });
+    return card;
   }
 
   function tipsCard() {

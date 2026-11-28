@@ -415,6 +415,8 @@ html[data-theme="light"] .icon-btn .i-moon { display: none; }
 
 .hero-points li { display: inline-flex; align-items: center; gap: 6px; }
 .hero-points svg { color: var(--accent); flex: none; }
+.hero-sub { font-size: 14px; line-height: 1.75; color: var(--text-3); }
+.hero-sub a { color: var(--accent-2); text-decoration: underline; text-underline-offset: 3px; }
 
 /* 手机模型 */
 .hero-visual { display: flex; justify-content: center; }

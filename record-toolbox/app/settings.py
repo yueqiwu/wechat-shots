@@ -19,7 +19,7 @@ DEFAULTS: dict = {
     "page_height": "standard",    # short | standard | tall
     "video_analysis_fps": 10.0,   # 录屏分析的初始抽帧率
     "video_refine_rounds": 2,     # 补采轮数（低配电脑默认更省）
-    "max_shots": 500,             # ADB 截图最大张数保护
+    "max_shots": 0,               # ADB 截图张数上限，0 = 不限制
     "keep_raw_shots": False,      # 是否保留原始截图
 }
 
